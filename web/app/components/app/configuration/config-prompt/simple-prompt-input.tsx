@@ -15,6 +15,8 @@ import { getNewVar, getVars } from '@/utils/var'
 import AutomaticBtn from '@/app/components/app/configuration/config/automatic/automatic-btn'
 import type { GenRes } from '@/service/debug'
 import GetAutomaticResModal from '@/app/components/app/configuration/config/automatic/get-automatic-res'
+import PromptTemplateBtn from '@/app/components/app/configuration/config/prompt-templates/prompt-template-btn'
+import PromptTemplateModal from '@/app/components/app/configuration/config/prompt-templates/prompt-template-modal'
 import PromptEditor from '@/app/components/base/prompt-editor'
 import ConfigContext from '@/context/debug-configuration'
 import { useModalContext } from '@/context/modal-context'
@@ -142,6 +144,24 @@ const Prompt: FC<ISimplePromptInput> = ({
   }
 
   const [showAutomatic, { setTrue: showAutomaticTrue, setFalse: showAutomaticFalse }] = useBoolean(false)
+  const [showTemplateModal, { setTrue: showTemplateModalTrue, setFalse: showTemplateModalFalse }] = useBoolean(false)
+
+  const handleTemplateApply = (template: string, newVariables?: PromptVariable[]) => {
+    eventEmitter?.emit({
+      type: PROMPT_EDITOR_UPDATE_VALUE_BY_EVENT_EMITTER,
+      payload: template,
+    } as any)
+    const newModelConfig = produce(modelConfig, (draft) => {
+      draft.configs.prompt_template = template
+      // 清空现有变量，使用模板中的新变量替换
+      if (newVariables !== undefined)
+        draft.configs.prompt_variables = newVariables
+    })
+    setModelConfig(newModelConfig)
+    setPrevPromptConfig(modelConfig.configs)
+    showTemplateModalFalse()
+  }
+
   const handleAutomaticRes = (res: GenRes) => {
     // put eventEmitter in first place to prevent overwrite the configs.prompt_variables.But another problem is that prompt won't hight the prompt_variables.
     eventEmitter?.emit({
@@ -188,9 +208,12 @@ const Prompt: FC<ISimplePromptInput> = ({
                 />
               )}
             </div>
-            <div className='flex items-center'>
+            <div className='flex items-center space-x-2'>
               {!readonly && !isMobile && (
-                <AutomaticBtn onClick={showAutomaticTrue} />
+                <>
+                  <PromptTemplateBtn onClick={showTemplateModalTrue} />
+                  <AutomaticBtn onClick={showAutomaticTrue} />
+                </>
               )}
             </div>
           </div>
@@ -282,6 +305,14 @@ const Prompt: FC<ISimplePromptInput> = ({
           onFinished={handleAutomaticRes}
           currentPrompt={promptTemplate}
           isBasicMode
+        />
+      )}
+
+      {showTemplateModal && (
+        <PromptTemplateModal
+          isShow={showTemplateModal}
+          onClose={showTemplateModalFalse}
+          onApply={handleTemplateApply}
         />
       )}
     </div>

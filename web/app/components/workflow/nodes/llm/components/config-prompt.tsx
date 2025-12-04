@@ -14,6 +14,7 @@ import cn from '@/utils/classnames'
 import Editor from '@/app/components/workflow/nodes/_base/components/prompt/editor'
 import AddButton from '@/app/components/workflow/nodes/_base/components/add-button'
 import { DragHandle } from '@/app/components/base/icons/src/vender/line/others'
+import PromptTemplateSelector from './prompt-template-selector'
 
 const i18nPrefix = 'workflow.nodes.llm'
 
@@ -136,6 +137,16 @@ const ConfigPrompt: FC<Props> = ({
     setTimeout(() => setControlPromptEditorRerenderKey(Date.now()))
   }, [handleCompletionPromptChange, setControlPromptEditorRerenderKey])
 
+  const handleTemplateApplied = useCallback((prompt: string) => {
+    handleCompletionPromptChange(prompt)
+    setTimeout(() => setControlPromptEditorRerenderKey(Date.now()))
+  }, [handleCompletionPromptChange, setControlPromptEditorRerenderKey])
+
+  const handleChatModeTemplateApplied = useCallback((template: PromptItem[]) => {
+    onChange(template)
+    setTimeout(() => setControlPromptEditorRerenderKey(Date.now()))
+  }, [onChange, setControlPromptEditorRerenderKey])
+
   const handleCompletionEditionTypeChange = useCallback((editionType: EditionType) => {
     const newPrompt = produce(payload as PromptItem, (draft) => {
       draft.edition_type = editionType
@@ -154,6 +165,17 @@ const ConfigPrompt: FC<Props> = ({
       {(isChatModel && Array.isArray(payload))
         ? (
           <div>
+            <div className='mb-2 flex items-center justify-between'>
+              <div className='text-xs font-semibold uppercase text-text-secondary'>
+                {t(`${i18nPrefix}.prompt`)}
+              </div>
+              {!readOnly && (
+                <PromptTemplateSelector
+                  onApplyTemplate={handleChatModeTemplateApplied}
+                  isChatModel={isChatModel}
+                />
+              )}
+            </div>
             <div className='space-y-2'>
               <ReactSortable className="space-y-1"
                 list={payloadWithIds}
@@ -233,12 +255,14 @@ const ConfigPrompt: FC<Props> = ({
               nodesOutputVars={availableVars}
               availableNodes={availableNodesWithParent}
               isSupportPromptGenerator
+              isSupportPromptTemplate
               isSupportJinja
               editionType={(payload as PromptItem).edition_type}
               varList={varList}
               onEditionTypeChange={handleCompletionEditionTypeChange}
               handleAddVariable={handleAddVariable}
               onGenerated={handleGenerated}
+              onTemplateApplied={handleTemplateApplied}
               modelConfig={modelConfig}
             />
           </div>
