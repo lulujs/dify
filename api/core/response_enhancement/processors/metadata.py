@@ -141,9 +141,9 @@ class MetadataProcessor(PostProcessor):
                 mimetype=response.mimetype,
                 headers=dict(response.headers),  # Preserve original headers
             )
-        except (json.JSONDecodeError, AttributeError) as e:
+        except (json.JSONDecodeError, AttributeError):
             # If we can't parse the JSON, return the original response
-            return response
+            return response  # type: ignore[return-value]
 
     def _get_or_generate_request_id(self, context: ProcessingContext) -> str:
         """Get request ID from headers or generate a new one.

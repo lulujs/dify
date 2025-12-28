@@ -26,7 +26,6 @@ from core.errors.error import (
 )
 from core.helper.trace_id_helper import get_external_trace_id
 from core.model_runtime.errors.invoke import InvokeError
-from core.response_enhancement import MetadataProcessor, StandardFormatProcessor, get_registry, response_enhancer
 from core.workflow.enums import WorkflowExecutionStatus
 from core.workflow.graph_engine.manager import GraphEngineManager
 from extensions.ext_database import db
@@ -41,6 +40,7 @@ from services.errors.llm import InvokeRateLimitError
 from services.workflow_app_service import WorkflowAppService
 
 logger = logging.getLogger(__name__)
+
 
 # Define parsers for workflow APIs
 workflow_run_parser = (
@@ -87,24 +87,6 @@ workflow_run_fields = {
     "finished_at": TimestampField,
     "elapsed_time": fields.Float,
 }
-
-
-def _initialize_response_enhancement():
-    """Initialize response enhancement processors for completion API."""
-    registry = get_registry()
-
-    # Register built-in processors
-    if not registry.get("metadata"):
-        registry.register("metadata", MetadataProcessor(api_version="1.0"))
-        logger.debug("Registered metadata processor for completion API")
-
-    if not registry.get("standard_format"):
-        registry.register("standard_format", StandardFormatProcessor())
-        logger.debug("Registered standard format processor for completion API")
-
-
-# Initialize processors when module is loaded
-_initialize_response_enhancement()
 
 
 def build_workflow_run_model(api_or_ns: Api | Namespace):
@@ -163,7 +145,6 @@ class WorkflowRunApi(Resource):
         }
     )
     @validate_app_token(fetch_user_arg=FetchUserArg(fetch_from=WhereisUserArg.JSON, required=True))
-    @response_enhancer(enabled=True, fail_silently=True)
     def post(self, app_model: App, end_user: EndUser):
         """Execute a workflow.
 

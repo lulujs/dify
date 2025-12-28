@@ -13,18 +13,12 @@ from werkzeug.wrappers import Response as WerkzeugResponse
 from .config import get_config
 from .context import ProcessingContext
 from .error_handler import EnhancementErrorHandler
-from .registry import PostProcessorRegistry
+from .registry import get_registry
 
 logger = logging.getLogger(__name__)
 
 # Global instances
-_registry = PostProcessorRegistry()
 _error_handler = EnhancementErrorHandler()
-
-
-def get_registry() -> PostProcessorRegistry:
-    """Get the global post-processor registry."""
-    return _registry
 
 
 def get_error_handler() -> EnhancementErrorHandler:
@@ -94,7 +88,7 @@ def response_enhancer(
                 # Handle different response types appropriately
                 if response_type in ["json", "dict"]:
                     # Standard JSON/dict responses - full processing
-                    enhanced_response = _registry.execute_pipeline(processor_list, original_response, context)
+                    enhanced_response = get_registry().execute_pipeline(processor_list, original_response, context)
                     return _preserve_response_structure(original_response, enhanced_response)
 
                 elif response_type == "streaming":
@@ -221,6 +215,8 @@ def _get_endpoint_path(func: Callable) -> str:
                 "ChatApi": "/chat-messages",
                 "CompletionStopApi": "/completion-messages/{task_id}/stop",
                 "ChatStopApi": "/chat-messages/{task_id}/stop",
+                "WorkflowRunApi": "/workflows/run",
+                "WorkflowRunByIdApi": "/workflows/{workflow_id}/run",
             }
 
             if class_name in endpoint_mapping:
@@ -408,7 +404,7 @@ def _handle_streaming_response(original_response: Any, processor_list: list[str]
 
         # Execute processors that can handle streaming responses
         # Most processors will skip streaming responses, but some (like logging) might still work
-        _registry.execute_pipeline(processor_list, original_response, streaming_context)
+        get_registry().execute_pipeline(processor_list, original_response, streaming_context)
 
         # For Flask Response objects, we might be able to add headers
         if isinstance(original_response, (Response, WerkzeugResponse)):
@@ -458,7 +454,7 @@ def _handle_non_json_response(
         )
 
         # Execute processors - most will skip non-JSON responses
-        _registry.execute_pipeline(processor_list, original_response, non_json_context)
+        get_registry().execute_pipeline(processor_list, original_response, non_json_context)
 
         # For Flask Response objects, add metadata to headers
         if isinstance(original_response, (Response, WerkzeugResponse)):

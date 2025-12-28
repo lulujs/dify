@@ -1,6 +1,7 @@
 """Registry for managing post-processors."""
 
 import logging
+import threading
 from typing import Any, Optional
 
 from .context import ProcessingContext
@@ -137,3 +138,35 @@ class PostProcessorRegistry:
         """Clear all registered processors."""
         self._processors.clear()
         logger.debug("Cleared all registered processors")
+
+
+# Global registry instance
+_registry_instance: Optional[PostProcessorRegistry] = None
+_registry_lock = threading.Lock()
+
+
+def get_registry() -> PostProcessorRegistry:
+    """Get the global post-processor registry instance.
+
+    Returns:
+        Global PostProcessorRegistry instance
+    """
+    global _registry_instance
+
+    with _registry_lock:
+        if _registry_instance is None:
+            _registry_instance = PostProcessorRegistry()
+        return _registry_instance
+
+
+def reset_registry() -> None:
+    """Reset the global registry instance (mainly for testing).
+
+    This function clears the global registry and creates a new instance.
+    """
+    global _registry_instance
+
+    with _registry_lock:
+        if _registry_instance is not None:
+            _registry_instance.clear()
+        _registry_instance = None

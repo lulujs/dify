@@ -26,7 +26,7 @@ endpoints:
   # === Core Service API Endpoints ===
   
   # Completion API - Add metadata and timing information
-  - pattern: "/completion-messages"
+  - pattern: "/v1/completion-messages"
     processors: ["metadata"]
     enabled: true
     conditions:
@@ -34,7 +34,7 @@ endpoints:
       method: "POST"
   
   # Chat API - Add metadata, timing, and tenant information
-  - pattern: "/chat-messages"
+  - pattern: "/v1/chat-messages"
     processors: ["metadata"]
     enabled: true
     conditions:
@@ -44,14 +44,14 @@ endpoints:
   # === Audio Processing Endpoints ===
   
   # Audio-to-text conversion
-  - pattern: "/audio-to-text"
+  - pattern: "/v1/audio-to-text"
     processors: ["metadata"]
     enabled: true
     conditions:
       response_type: "json"
   
   # Text-to-audio conversion (binary response)
-  - pattern: "/text-to-audio"
+  - pattern: "/v1/text-to-audio"
     processors: ["metadata"]
     enabled: true
     conditions:
@@ -60,14 +60,14 @@ endpoints:
   # === File and Upload Endpoints ===
   
   # File upload endpoints
-  - pattern: "/files"
+  - pattern: "/v1/files"
     processors: ["metadata"]
     enabled: true
     conditions:
       response_type: "json"
   
   # File operations
-  - pattern: "/files/*"
+  - pattern: "/v1/files/*"
     processors: ["metadata"]
     enabled: true
     conditions:
@@ -76,21 +76,21 @@ endpoints:
   # === Workflow and Advanced Features ===
   
   # Workflow execution
-  - pattern: "/workflows/run"
-    processors: ["standard_format"]
+  - pattern: "/v1/workflows/run"
+    processors: ["standard_format","metadata"]
     enabled: true
     conditions:
       response_type: "json"
   
   # Parameters and suggestions
-  - pattern: "/parameters"
+  - pattern: "/v1/parameters"
     processors: ["metadata"]
     enabled: true
     conditions:
       response_type: "json"
   
   # Suggested questions
-  - pattern: "/suggested-questions"
+  - pattern: "/v1/suggested-questions"
     processors: ["metadata"]
     enabled: true
     conditions:
@@ -99,16 +99,16 @@ endpoints:
   # === Control and Management Endpoints ===
   
   # Stop endpoints - Disable enhancement for simple control responses
-  - pattern: "*/stop"
+  - pattern: "/v1/*/stop"
     processors: []
     enabled: false
   
   # Health check and status endpoints - Keep responses minimal
-  - pattern: "/health"
+  - pattern: "/v1/health"
     processors: []
     enabled: false
   
-  - pattern: "/status"
+  - pattern: "/v1/status"
     processors: []
     enabled: false
   
@@ -116,7 +116,7 @@ endpoints:
   
   # Streaming endpoints are handled specially by the framework
   # Enhancement is limited to headers and side-effects (logging)
-  - pattern: "*/stream"
+  - pattern: "/v1/*/stream"
     processors: ["metadata"]
     enabled: true
     conditions:

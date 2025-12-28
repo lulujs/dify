@@ -183,6 +183,7 @@ class EnhancementConfig:
                 # Load endpoint configurations
                 endpoints_data = config_data.get("endpoints", [])
                 self.endpoint_configs = []
+
                 for endpoint_data in endpoints_data:
                     endpoint_config = EndpointConfig(
                         endpoint_pattern=endpoint_data["pattern"],

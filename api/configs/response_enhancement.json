@@ -7,7 +7,7 @@
   },
   "endpoints": [
     {
-      "pattern": "/completion-messages",
+      "pattern": "/v1/completion-messages",
       "processors": ["metadata"],
       "enabled": true,
       "conditions": {
@@ -16,7 +16,7 @@
       }
     },
     {
-      "pattern": "/chat-messages",
+      "pattern": "/v1/chat-messages",
       "processors": ["metadata"],
       "enabled": true,
       "conditions": {
@@ -25,7 +25,7 @@
       }
     },
     {
-      "pattern": "/audio-to-text",
+      "pattern": "/v1/audio-to-text",
       "processors": ["metadata"],
       "enabled": true,
       "conditions": {
@@ -33,7 +33,7 @@
       }
     },
     {
-      "pattern": "/text-to-audio",
+      "pattern": "/v1/text-to-audio",
       "processors": ["metadata"],
       "enabled": true,
       "conditions": {
@@ -41,7 +41,7 @@
       }
     },
     {
-      "pattern": "/files",
+      "pattern": "/v1/files",
       "processors": ["metadata"],
       "enabled": true,
       "conditions": {
@@ -49,7 +49,7 @@
       }
     },
     {
-      "pattern": "/files/*",
+      "pattern": "/v1/files/*",
       "processors": ["metadata"],
       "enabled": true,
       "conditions": {
@@ -57,7 +57,7 @@
       }
     },
     {
-      "pattern": "/workflows/run",
+      "pattern": "/v1/workflows/run",
       "processors": ["standard_format"],
       "enabled": true,
       "conditions": {
@@ -65,7 +65,7 @@
       }
     },
     {
-      "pattern": "/parameters",
+      "pattern": "/v1/parameters",
       "processors": ["metadata"],
       "enabled": true,
       "conditions": {
@@ -73,7 +73,7 @@
       }
     },
     {
-      "pattern": "/suggested-questions",
+      "pattern": "/v1/suggested-questions",
       "processors": ["metadata"],
       "enabled": true,
       "conditions": {
@@ -81,22 +81,22 @@
       }
     },
     {
-      "pattern": "*/stop",
+      "pattern": "/v1/*/stop",
       "processors": [],
       "enabled": false
     },
     {
-      "pattern": "/health",
+      "pattern": "/v1/health",
       "processors": [],
       "enabled": false
     },
     {
-      "pattern": "/status",
+      "pattern": "/v1/status",
       "processors": [],
       "enabled": false
     },
     {
-      "pattern": "*/stream",
+      "pattern": "/v1/*/stream",
       "processors": ["metadata"],
       "enabled": true,
       "conditions": {
