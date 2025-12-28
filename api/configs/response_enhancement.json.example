@@ -1,0 +1,36 @@
+{
+  "global": {
+    "enabled": true,
+    "default_processors": [],
+    "fail_silently": true,
+    "log_level": "INFO"
+  },
+  "endpoints": [
+    {
+      "pattern": "/completion-messages",
+      "processors": ["metadata", "timing"],
+      "enabled": true,
+      "conditions": {
+        "response_type": "json"
+      }
+    },
+    {
+      "pattern": "/chat-messages",
+      "processors": ["metadata", "timing", "tenant_info"],
+      "enabled": true,
+      "conditions": {
+        "response_type": "json"
+      }
+    },
+    {
+      "pattern": "/*/stop",
+      "processors": [],
+      "enabled": false
+    },
+    {
+      "pattern": "*",
+      "processors": ["metadata"],
+      "enabled": true
+    }
+  ]
+}

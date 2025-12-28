@@ -1,0 +1,69 @@
+# Response Enhancement Configuration
+# This file configures the response enhancement framework for Service API endpoints
+# Supports both YAML and JSON formats
+
+global:
+  # Global enable/disable flag
+  enabled: true
+  
+  # Default processors to apply when no specific configuration is found
+  default_processors: []
+  
+  # Whether to fail silently on processor errors (recommended: true for production)
+  fail_silently: true
+  
+  # Log level for enhancement operations (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+  log_level: "INFO"
+
+# Endpoint-specific configurations
+endpoints:
+  # Completion API configuration
+  - pattern: "/completion-messages"
+    processors: ["metadata", "timing"]
+    enabled: true
+    conditions:
+      response_type: "json"
+      method: "POST"
+  
+  # Chat API configuration  
+  - pattern: "/chat-messages"
+    processors: ["metadata", "timing", "tenant_info"]
+    enabled: true
+    conditions:
+      response_type: "json"
+      method: "POST"
+  
+  # Audio API configuration
+  - pattern: "/audio-to-text"
+    processors: ["metadata", "timing"]
+    enabled: true
+    conditions:
+      response_type: "json"
+  
+  # Text-to-audio API configuration
+  - pattern: "/text-to-audio"
+    processors: ["metadata"]
+    enabled: true
+    conditions:
+      response_type: "binary"
+  
+  # Disable enhancement for stop endpoints
+  - pattern: "/*/stop"
+    processors: []
+    enabled: false
+  
+  # Disable enhancement for streaming endpoints (handled separately)
+  - pattern: "/*/stream"
+    processors: []
+    enabled: false
+  
+  # Wildcard pattern for all other endpoints
+  - pattern: "*"
+    processors: ["metadata"]
+    enabled: true
+
+# Environment variable overrides:
+# RESPONSE_ENHANCEMENT_ENABLED=true/false
+# RESPONSE_ENHANCEMENT_FAIL_SILENTLY=true/false  
+# RESPONSE_ENHANCEMENT_LOG_LEVEL=DEBUG/INFO/WARNING/ERROR/CRITICAL
+# RESPONSE_ENHANCEMENT_DEFAULT_PROCESSORS=metadata,timing

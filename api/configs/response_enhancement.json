@@ -1,0 +1,112 @@
+{
+  "global": {
+    "enabled": true,
+    "default_processors": ["metadata"],
+    "fail_silently": true,
+    "log_level": "INFO"
+  },
+  "endpoints": [
+    {
+      "pattern": "/completion-messages",
+      "processors": ["metadata"],
+      "enabled": true,
+      "conditions": {
+        "response_type": "json",
+        "method": "POST"
+      }
+    },
+    {
+      "pattern": "/chat-messages",
+      "processors": ["metadata"],
+      "enabled": true,
+      "conditions": {
+        "response_type": "json",
+        "method": "POST"
+      }
+    },
+    {
+      "pattern": "/audio-to-text",
+      "processors": ["metadata"],
+      "enabled": true,
+      "conditions": {
+        "response_type": "json"
+      }
+    },
+    {
+      "pattern": "/text-to-audio",
+      "processors": ["metadata"],
+      "enabled": true,
+      "conditions": {
+        "response_type": "binary"
+      }
+    },
+    {
+      "pattern": "/files",
+      "processors": ["metadata"],
+      "enabled": true,
+      "conditions": {
+        "response_type": "json"
+      }
+    },
+    {
+      "pattern": "/files/*",
+      "processors": ["metadata"],
+      "enabled": true,
+      "conditions": {
+        "response_type": "json"
+      }
+    },
+    {
+      "pattern": "/workflows/run",
+      "processors": ["standard_format"],
+      "enabled": true,
+      "conditions": {
+        "response_type": "json"
+      }
+    },
+    {
+      "pattern": "/parameters",
+      "processors": ["metadata"],
+      "enabled": true,
+      "conditions": {
+        "response_type": "json"
+      }
+    },
+    {
+      "pattern": "/suggested-questions",
+      "processors": ["metadata"],
+      "enabled": true,
+      "conditions": {
+        "response_type": "json"
+      }
+    },
+    {
+      "pattern": "*/stop",
+      "processors": [],
+      "enabled": false
+    },
+    {
+      "pattern": "/health",
+      "processors": [],
+      "enabled": false
+    },
+    {
+      "pattern": "/status",
+      "processors": [],
+      "enabled": false
+    },
+    {
+      "pattern": "*/stream",
+      "processors": ["metadata"],
+      "enabled": true,
+      "conditions": {
+        "response_type": "streaming"
+      }
+    },
+    {
+      "pattern": "*",
+      "processors": ["metadata"],
+      "enabled": true
+    }
+  ]
+}

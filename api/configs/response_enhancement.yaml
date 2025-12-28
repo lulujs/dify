@@ -1,0 +1,158 @@
+# Response Enhancement Configuration for Dify Service API
+# This file configures the response enhancement framework for Service API endpoints
+# 
+# The framework adds metadata fields to API responses without modifying business logic.
+# It supports both blocking and streaming responses with appropriate handling for each type.
+
+global:
+  # Global enable/disable flag for response enhancement
+  enabled: true
+  
+  # Default processors to apply when no specific endpoint configuration is found
+  # Available processors: metadata, timing, tenant_info
+  default_processors: ["metadata"]
+  
+  # Whether to fail silently on processor errors (recommended: true for production)
+  # When true, errors in post-processing will be logged but won't break the API response
+  fail_silently: true
+  
+  # Log level for enhancement operations
+  # Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  log_level: "INFO"
+
+# Endpoint-specific configurations
+# Patterns support wildcards (*) and are matched in order
+endpoints:
+  # === Core Service API Endpoints ===
+  
+  # Completion API - Add metadata and timing information
+  - pattern: "/completion-messages"
+    processors: ["metadata"]
+    enabled: true
+    conditions:
+      response_type: "json"
+      method: "POST"
+  
+  # Chat API - Add metadata, timing, and tenant information
+  - pattern: "/chat-messages"
+    processors: ["metadata"]
+    enabled: true
+    conditions:
+      response_type: "json"
+      method: "POST"
+  
+  # === Audio Processing Endpoints ===
+  
+  # Audio-to-text conversion
+  - pattern: "/audio-to-text"
+    processors: ["metadata"]
+    enabled: true
+    conditions:
+      response_type: "json"
+  
+  # Text-to-audio conversion (binary response)
+  - pattern: "/text-to-audio"
+    processors: ["metadata"]
+    enabled: true
+    conditions:
+      response_type: "binary"
+  
+  # === File and Upload Endpoints ===
+  
+  # File upload endpoints
+  - pattern: "/files"
+    processors: ["metadata"]
+    enabled: true
+    conditions:
+      response_type: "json"
+  
+  # File operations
+  - pattern: "/files/*"
+    processors: ["metadata"]
+    enabled: true
+    conditions:
+      response_type: "json"
+  
+  # === Workflow and Advanced Features ===
+  
+  # Workflow execution
+  - pattern: "/workflows/run"
+    processors: ["standard_format"]
+    enabled: true
+    conditions:
+      response_type: "json"
+  
+  # Parameters and suggestions
+  - pattern: "/parameters"
+    processors: ["metadata"]
+    enabled: true
+    conditions:
+      response_type: "json"
+  
+  # Suggested questions
+  - pattern: "/suggested-questions"
+    processors: ["metadata"]
+    enabled: true
+    conditions:
+      response_type: "json"
+  
+  # === Control and Management Endpoints ===
+  
+  # Stop endpoints - Disable enhancement for simple control responses
+  - pattern: "*/stop"
+    processors: []
+    enabled: false
+  
+  # Health check and status endpoints - Keep responses minimal
+  - pattern: "/health"
+    processors: []
+    enabled: false
+  
+  - pattern: "/status"
+    processors: []
+    enabled: false
+  
+  # === Streaming Endpoints ===
+  
+  # Streaming endpoints are handled specially by the framework
+  # Enhancement is limited to headers and side-effects (logging)
+  - pattern: "*/stream"
+    processors: ["metadata"]
+    enabled: true
+    conditions:
+      response_type: "streaming"
+  
+  # === Default Fallback ===
+  
+  # Catch-all pattern for any other Service API endpoints
+  # This ensures all endpoints get basic metadata enhancement
+  - pattern: "*"
+    processors: ["metadata"]
+    enabled: true
+
+# === Configuration Notes ===
+#
+# 1. Processor Order: Processors are executed in the order specified
+# 2. Pattern Matching: First matching pattern wins, so order matters
+# 3. Conditions: Optional filters for when processors should run
+# 4. Response Types: json, streaming, binary, text, unknown
+# 5. Methods: GET, POST, PUT, DELETE, PATCH
+#
+# === Available Processors ===
+#
+# - metadata: Adds timestamp, request_id, api_version fields
+# - timing: Adds processing_time field (when implemented)
+# - tenant_info: Adds tenant-specific information (when implemented)
+#
+# === Environment Variable Overrides ===
+#
+# The following environment variables can override configuration:
+# - RESPONSE_ENHANCEMENT_ENABLED=true/false
+# - RESPONSE_ENHANCEMENT_FAIL_SILENTLY=true/false  
+# - RESPONSE_ENHANCEMENT_LOG_LEVEL=DEBUG/INFO/WARNING/ERROR/CRITICAL
+# - RESPONSE_ENHANCEMENT_DEFAULT_PROCESSORS=metadata,timing
+#
+# === Hot Reload ===
+#
+# This configuration file supports hot reload. Changes will be automatically
+# detected and applied without requiring a service restart.

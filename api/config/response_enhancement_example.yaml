@@ -1,0 +1,29 @@
+# Response Enhancement Configuration Example
+# This file shows how to configure the StandardFormatProcessor
+
+global:
+  enabled: true
+  fail_silently: true
+  default_processors: ['standard_format']  # Use standard format by default
+  log_level: "INFO"
+
+endpoints:
+  # Apply standard format to completion endpoints
+  - pattern: "/completion-messages"
+    processors: ['standard_format']
+    enabled: true
+    
+  # Apply standard format to chat endpoints  
+  - pattern: "/chat-messages"
+    processors: ['standard_format']
+    enabled: true
+    
+  # Apply both standard format and metadata to specific endpoints
+  - pattern: "/completion-messages/advanced"
+    processors: ['standard_format', 'metadata']
+    enabled: true
+    
+  # Disable enhancement for certain endpoints if needed
+  - pattern: "/health"
+    processors: []
+    enabled: false
