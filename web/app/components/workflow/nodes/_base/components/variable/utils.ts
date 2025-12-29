@@ -362,7 +362,7 @@ const findExceptVarInObject = (
 
   const res: Var = {
     variable: obj.variable,
-    type: isFile ? VarType.file : VarType.object,
+    type: isFile ? VarType.file : (obj.type || VarType.object),
     children: childrenResult,
     schemaType: obj.schemaType,
   }
@@ -1174,10 +1174,10 @@ export const getVarType = ({
     const isStructuredOutputVar = !!targetVar.children?.schema?.properties
     if (isStructuredOutputVar) {
       if (valueSelector.length === 2) {
-        // root
+        // root - preserve original type (e.g., array[object] should stay array[object])
         return preferSchemaType && targetVar.schemaType
           ? targetVar.schemaType
-          : VarType.object
+          : targetVar.type
       }
       let currProperties = targetVar.children.schema;
       (valueSelector as ValueSelector).slice(2).forEach((key, i) => {

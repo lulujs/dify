@@ -66,7 +66,7 @@ const varChildrenToProperties = (children: Var[]): Record<string, FieldType> => 
     }
     // Recursively convert nested Var[] children
     if (
-      (child.type === VarType.object || child.type === VarType.file || child.type === VarType.arrayObject)
+      (child.type === VarType.object || child.type === VarType.file)
       && child.children
       && Array.isArray(child.children)
       && child.children.length > 0

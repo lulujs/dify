@@ -162,6 +162,17 @@
 - [x] 17. Final Checkpoint - 完整功能验证
   - 确保所有测试通过，如有问题请询问用户
 
+- [ ] 18. 修复 Array[Object] 类型识别 Bug
+  - [ ] 18.1 修复 `getVarType` 函数中的类型识别问题
+    - 修改 `web/app/components/workflow/nodes/_base/components/variable/utils.ts`
+    - 当变量有 `children.schema.properties` 且 `valueSelector.length === 2` 时，返回原始 `targetVar.type` 而不是默认的 `VarType.object`
+    - 确保 `array[object]` 类型的变量在有子变量时仍然保持 `array[object]` 类型
+    - _Requirements: 4.6, 4.7_
+  - [ ] 18.2 添加单元测试验证类型保持
+    - 测试 `array[object]` 类型变量在有 children 时类型不变
+    - 测试 `object` 类型变量在有 children 时类型不变
+    - _Requirements: 4.6, 4.7_
+
 ## Notes
 
 - 任务标记 `*` 的为可选测试任务，可根据时间安排决定是否实现

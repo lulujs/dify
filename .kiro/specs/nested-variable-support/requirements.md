@@ -67,6 +67,8 @@
 3. WHEN a nested path is selected, THE Variable_Selector_UI SHALL validate type compatibility with the target input
 4. THE Variable_Template_Parser SHALL support nested path references in template strings (e.g., `{{#node_id.user.profile.name#}}`)
 5. WHEN a referenced nested path does not exist at runtime, THE Workflow_Engine SHALL use the default value if configured, or return an empty value
+6. WHEN selecting an Array<Object> type variable with children, THE Variable_Selector_UI SHALL preserve the original array[object] type instead of converting it to object type
+7. WHEN determining the type of a variable with children, THE Type_Resolver SHALL return the original variable type (object or array[object]) rather than defaulting to object
 
 ### Requirement 5: 嵌套变量的序列化与反序列化
 
