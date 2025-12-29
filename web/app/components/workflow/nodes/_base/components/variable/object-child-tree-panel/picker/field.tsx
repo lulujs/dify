@@ -26,6 +26,11 @@ const structTypeToVarType = (type: Type): VarType => {
     [Type.boolean]: VarType.boolean,
     [Type.object]: VarType.object,
     [Type.array]: VarType.array,
+    [Type.arrayString]: VarType.arrayString,
+    [Type.arrayNumber]: VarType.arrayNumber,
+    [Type.arrayObject]: VarType.arrayObject,
+    [Type.file]: VarType.file,
+    [Type.enumType]: VarType.string, // enum maps to string
   }
   return mapping[type] || VarType.any
 }

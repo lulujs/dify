@@ -181,7 +181,6 @@ const Editor: FC<Props> = ({
               )}
               {isSupportPromptTemplate && (
                 <PromptTemplateSelector
-                  nodeId={nodeId!}
                   className='ml-[5px]'
                   onApplyTemplate={(template) => {
                     const promptText = template.map(item => item.text || item.jinja2_text || '').join('\n\n')
