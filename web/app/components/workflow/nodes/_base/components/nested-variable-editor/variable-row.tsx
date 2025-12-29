@@ -68,9 +68,9 @@ const VariableRow: FC<VariableRowProps> = ({
   const typeOptions = useMemo(() =>
     TYPE_OPTIONS.map(opt => ({
       value: opt.value,
-      name: opt.i18nKey ? (t(opt.i18nKey) || opt.name) : opt.name,
+      name: opt.name,
     })),
-  [t])
+  [])
 
   return (
     <div className="variable-row">

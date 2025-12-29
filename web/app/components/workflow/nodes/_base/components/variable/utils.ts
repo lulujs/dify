@@ -115,6 +115,10 @@ export const inputVarTypeToVarType = (type: InputVarType): VarType => {
         [InputVarType.singleFile]: VarType.file,
         [InputVarType.multiFiles]: VarType.arrayFile,
         [InputVarType.jsonObject]: VarType.object,
+        [InputVarType.arrayString]: VarType.arrayString,
+        [InputVarType.arrayNumber]: VarType.arrayNumber,
+        [InputVarType.arrayBoolean]: VarType.arrayBoolean,
+        [InputVarType.arrayObject]: VarType.arrayObject,
       } as any
     )[type] || VarType.string
   )
@@ -397,7 +401,8 @@ const formatItem = (
         try {
           // Priority: children (InputVarChild[]) > json_schema
           // children provides better nested path selection support
-          if (type === VarType.object && v.children && v.children.length > 0) {
+          // Support both object and arrayObject types with children
+          if ((type === VarType.object || type === VarType.arrayObject) && v.children && v.children.length > 0) {
             varRes.children = inputVarChildrenToVarChildren(v.children)
           }
           else if (type === VarType.object && v.json_schema) {
@@ -968,7 +973,7 @@ const getIterationItemType = ({
       curr = Array.isArray(curr) ? curr.find(v => v.variable === key) : []
 
       if (isLast) arrayType = curr?.type
-      else if (curr?.type === VarType.object || curr?.type === VarType.file)
+      else if (curr?.type === VarType.object || curr?.type === VarType.file || curr?.type === VarType.arrayObject)
         curr = curr.children || []
     }
   }
@@ -1022,7 +1027,7 @@ const getLoopItemType = ({
         arrayType = curr?.type
       }
       else {
-        if (curr?.type === VarType.object || curr?.type === VarType.file)
+        if (curr?.type === VarType.object || curr?.type === VarType.file || curr?.type === VarType.arrayObject)
           curr = curr.children
       }
     })
@@ -1195,7 +1200,7 @@ export const getVarType = ({
           = preferSchemaType && curr?.schemaType ? curr?.schemaType : curr?.type
       }
       else {
-        if (curr?.type === VarType.object || curr?.type === VarType.file)
+        if (curr?.type === VarType.object || curr?.type === VarType.file || curr?.type === VarType.arrayObject)
           curr = curr.children
       }
     })

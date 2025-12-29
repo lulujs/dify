@@ -1338,6 +1338,14 @@ const translation = {
       arrayObject: '对象数组',
       arrayFile: '文件数组',
     },
+    jsonImport: {
+      button: '编辑 JSON',
+      title: '编辑 JSON',
+      description: '编辑 JSON 以定义变量结构',
+      emptyError: '请输入 JSON 内容',
+      objectError: 'JSON 必须是一个对象',
+      parseError: '无效的 JSON 格式',
+    },
   },
 }
 

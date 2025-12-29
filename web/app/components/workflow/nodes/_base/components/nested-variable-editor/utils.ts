@@ -29,7 +29,7 @@ export function generateChildName(): string {
  */
 export function createDefaultVariable(name?: string): NestedVariableDefinition {
   return {
-    name: name || generateVariableName(),
+    name: name || '',
     type: NestedVariableType.STRING,
     required: false,
     description: '',
@@ -41,7 +41,7 @@ export function createDefaultVariable(name?: string): NestedVariableDefinition {
  */
 export function createDefaultChildVariable(): NestedVariableDefinition {
   return {
-    name: generateChildName(),
+    name: '',
     type: NestedVariableType.STRING,
     required: false,
     description: '',

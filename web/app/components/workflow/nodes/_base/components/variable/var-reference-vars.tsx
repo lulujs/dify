@@ -40,7 +40,7 @@ const varChildrenToProperties = (children: Var[]): Record<string, Field> => {
     }
     // Recursively convert nested Var[] children
     if (
-      (child.type === VarType.object || child.type === VarType.file)
+      (child.type === VarType.object || child.type === VarType.file || child.type === VarType.arrayObject)
       && child.children
       && Array.isArray(child.children)
       && child.children.length > 0
@@ -88,7 +88,7 @@ const Item: FC<ItemProps> = ({
 }) => {
   const isStructureOutput = itemData.type === VarType.object && (itemData.children as StructuredOutput)?.schema?.properties
   const isFile = itemData.type === VarType.file && !isStructureOutput
-  const isObj = ([VarType.object, VarType.file].includes(itemData.type) && itemData.children && (itemData.children as Var[]).length > 0)
+  const isObj = ([VarType.object, VarType.file, VarType.arrayObject].includes(itemData.type) && itemData.children && (itemData.children as Var[]).length > 0)
   const isSys = itemData.variable.startsWith('sys.')
   const isEnv = itemData.variable.startsWith('env.')
   const isChatVar = itemData.variable.startsWith('conversation.')

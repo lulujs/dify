@@ -51,7 +51,12 @@ const FormItem: FC<Props> = ({
 
   const handleArrayItemChange = useCallback((index: number) => {
     return (newValue: any) => {
-      const newValues = produce(value, (draft: any) => {
+      // Ensure value is an array before using produce
+      const currentValue = Array.isArray(value) ? value : []
+      const newValues = produce(currentValue, (draft: any) => {
+        // Ensure the array is long enough
+        while (draft.length <= index)
+          draft.push(undefined)
         draft[index] = newValue
       })
       onChange(newValues)
@@ -60,8 +65,11 @@ const FormItem: FC<Props> = ({
 
   const handleArrayItemRemove = useCallback((index: number) => {
     return () => {
-      const newValues = produce(value, (draft: any) => {
-        draft.splice(index, 1)
+      // Ensure value is an array before using produce
+      const currentValue = Array.isArray(value) ? value : []
+      const newValues = produce(currentValue, (draft: any) => {
+        if (index < draft.length)
+          draft.splice(index, 1)
       })
       onChange(newValues)
     }
@@ -99,6 +107,10 @@ const FormItem: FC<Props> = ({
   const isArrayLikeType = [InputVarType.contexts, InputVarType.iterator].includes(type)
   const isContext = type === InputVarType.contexts
   const isIterator = type === InputVarType.iterator
+  const isArrayString = type === InputVarType.arrayString
+  const isArrayNumber = type === InputVarType.arrayNumber
+  const isArrayBoolean = type === InputVarType.arrayBoolean
+  const isArrayObject = type === InputVarType.arrayObject
   const isIteratorItemFile = isIterator && payload.isFileItem
   const singleFileValue = useMemo(() => {
     if (payload.variable === '#files#')
@@ -341,6 +353,141 @@ const FormItem: FC<Props> = ({
             </div>
           )
         }
+
+        {/* Array[String] type - list of text inputs */}
+        {isArrayString && (
+          <div className='space-y-2'>
+            {(value || ['']).map((item: string, index: number) => (
+              <div key={index} className='flex items-center gap-2'>
+                <Input
+                  value={item || ''}
+                  onChange={e => handleArrayItemChange(index)(e.target.value)}
+                  placeholder={`${t('appDebug.variableConfig.content')} ${index + 1}`}
+                  className='flex-1'
+                />
+                {(value as any)?.length > 1 && (
+                  <RiDeleteBinLine
+                    onClick={handleArrayItemRemove(index)}
+                    className='h-4 w-4 shrink-0 cursor-pointer text-text-tertiary hover:text-text-secondary'
+                  />
+                )}
+              </div>
+            ))}
+            <button
+              type='button'
+              onClick={() => onChange([...(value || []), ''])}
+              className='system-xs-medium text-text-accent hover:text-text-accent-secondary'
+            >
+              + {t('appDebug.variableConfig.addOption')}
+            </button>
+          </div>
+        )}
+
+        {/* Array[Number] type - list of number inputs */}
+        {isArrayNumber && (
+          <div className='space-y-2'>
+            {(value || [0]).map((item: number, index: number) => (
+              <div key={index} className='flex items-center gap-2'>
+                <Input
+                  type='number'
+                  value={item ?? ''}
+                  onChange={e => handleArrayItemChange(index)(e.target.value ? Number(e.target.value) : 0)}
+                  placeholder={`${t('appDebug.variableConfig.content')} ${index + 1}`}
+                  className='flex-1'
+                />
+                {(value as any)?.length > 1 && (
+                  <RiDeleteBinLine
+                    onClick={handleArrayItemRemove(index)}
+                    className='h-4 w-4 shrink-0 cursor-pointer text-text-tertiary hover:text-text-secondary'
+                  />
+                )}
+              </div>
+            ))}
+            <button
+              type='button'
+              onClick={() => onChange([...(value || []), 0])}
+              className='system-xs-medium text-text-accent hover:text-text-accent-secondary'
+            >
+              + {t('appDebug.variableConfig.addOption')}
+            </button>
+          </div>
+        )}
+
+        {/* Array[Boolean] type - list of boolean toggles */}
+        {isArrayBoolean && (
+          <div className='space-y-2'>
+            {(value || [false]).map((item: boolean, index: number) => (
+              <div key={index} className='flex items-center gap-2'>
+                <BoolInput
+                  name={`${typeof payload.label === 'object' ? payload.label.variable : payload.label} [${index + 1}]`}
+                  value={!!item}
+                  required={false}
+                  onChange={v => handleArrayItemChange(index)(v)}
+                />
+                {(value as any)?.length > 1 && (
+                  <RiDeleteBinLine
+                    onClick={handleArrayItemRemove(index)}
+                    className='h-4 w-4 shrink-0 cursor-pointer text-text-tertiary hover:text-text-secondary'
+                  />
+                )}
+              </div>
+            ))}
+            <button
+              type='button'
+              onClick={() => onChange([...(value || []), false])}
+              className='system-xs-medium text-text-accent hover:text-text-accent-secondary'
+            >
+              + {t('appDebug.variableConfig.addOption')}
+            </button>
+          </div>
+        )}
+
+        {/* Array[Object] type with children - list of nested object inputs */}
+        {isArrayObject && payload.children && payload.children.length > 0 && (
+          <div className='space-y-2'>
+            {(value || [{}]).map((item: Record<string, unknown>, index: number) => (
+              <div key={index} className='rounded-lg border border-components-panel-border bg-components-panel-bg p-3'>
+                <div className='mb-2 flex items-center justify-between'>
+                  <span className='system-xs-semibold text-text-secondary'>
+                    {t('appDebug.variableConfig.content')} {index + 1}
+                  </span>
+                  {(value as any)?.length > 1 && (
+                    <RiDeleteBinLine
+                      onClick={handleArrayItemRemove(index)}
+                      className='h-4 w-4 cursor-pointer text-text-tertiary hover:text-text-secondary'
+                    />
+                  )}
+                </div>
+                <NestedObjectInput
+                  definition={payload.children!}
+                  value={typeof item === 'object' && item !== null ? item : {}}
+                  onChange={v => handleArrayItemChange(index)(v)}
+                />
+              </div>
+            ))}
+            <button
+              type='button'
+              onClick={() => onChange([...(value || []), {}])}
+              className='system-xs-medium text-text-accent hover:text-text-accent-secondary'
+            >
+              + {t('appDebug.variableConfig.addOption')}
+            </button>
+          </div>
+        )}
+
+        {/* Array[Object] type without children - JSON array editor */}
+        {isArrayObject && (!payload.children || payload.children.length === 0) && (
+          <CodeEditor
+            value={value}
+            language={CodeLanguage.json}
+            onChange={onChange}
+            noWrapper
+            className='bg h-[120px] overflow-y-auto rounded-[10px] bg-components-input-bg-normal p-1'
+            placeholder={
+              <div className='whitespace-pre'>{'[\n  { }\n]'}</div>
+            }
+          />
+        )}
       </div>
     </div>
   )

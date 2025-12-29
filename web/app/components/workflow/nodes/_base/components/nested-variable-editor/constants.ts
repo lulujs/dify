@@ -6,22 +6,19 @@ import { NestedVariableType } from '@/types/workflow/nested-variable'
 import type { TypeOption } from './types'
 
 /**
- * All available variable type options for the type selector
- * Note: The 'name' field is the i18n key suffix under 'workflow.nestedVariable.types'
+ * Available variable type options for child variables
+ * Types are displayed in English without translation
+ * Supported types: string, number, boolean, object, array[string], array[number], array[boolean], array[object]
  */
 export const TYPE_OPTIONS: TypeOption[] = [
-  { value: NestedVariableType.STRING, name: 'string', i18nKey: 'workflow.nestedVariable.types.string' },
-  { value: NestedVariableType.INTEGER, name: 'integer', i18nKey: 'workflow.nestedVariable.types.integer' },
-  { value: NestedVariableType.NUMBER, name: 'number', i18nKey: 'workflow.nestedVariable.types.number' },
-  { value: NestedVariableType.BOOLEAN, name: 'boolean', i18nKey: 'workflow.nestedVariable.types.boolean' },
-  { value: NestedVariableType.OBJECT, name: 'object', i18nKey: 'workflow.nestedVariable.types.object' },
-  { value: NestedVariableType.FILE, name: 'file', i18nKey: 'workflow.nestedVariable.types.file' },
-  { value: NestedVariableType.ARRAY_STRING, name: 'arrayString', i18nKey: 'workflow.nestedVariable.types.arrayString' },
-  { value: NestedVariableType.ARRAY_INTEGER, name: 'arrayInteger', i18nKey: 'workflow.nestedVariable.types.arrayInteger' },
-  { value: NestedVariableType.ARRAY_NUMBER, name: 'arrayNumber', i18nKey: 'workflow.nestedVariable.types.arrayNumber' },
-  { value: NestedVariableType.ARRAY_BOOLEAN, name: 'arrayBoolean', i18nKey: 'workflow.nestedVariable.types.arrayBoolean' },
-  { value: NestedVariableType.ARRAY_OBJECT, name: 'arrayObject', i18nKey: 'workflow.nestedVariable.types.arrayObject' },
-  { value: NestedVariableType.ARRAY_FILE, name: 'arrayFile', i18nKey: 'workflow.nestedVariable.types.arrayFile' },
+  { value: NestedVariableType.STRING, name: 'string' },
+  { value: NestedVariableType.NUMBER, name: 'number' },
+  { value: NestedVariableType.BOOLEAN, name: 'boolean' },
+  { value: NestedVariableType.OBJECT, name: 'object' },
+  { value: NestedVariableType.ARRAY_STRING, name: 'array[string]' },
+  { value: NestedVariableType.ARRAY_NUMBER, name: 'array[number]' },
+  { value: NestedVariableType.ARRAY_BOOLEAN, name: 'array[boolean]' },
+  { value: NestedVariableType.ARRAY_OBJECT, name: 'array[object]' },
 ]
 
 /**

@@ -191,7 +191,7 @@ const useOneStepRun = <T>({
 
       if (isLast)
         return curr
-      else if (curr?.type === VarType.object || curr?.type === VarType.file)
+      else if (curr?.type === VarType.object || curr?.type === VarType.file || curr?.type === VarType.arrayObject)
         curr = curr.children
     }
 

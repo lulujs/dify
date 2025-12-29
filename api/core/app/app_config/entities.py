@@ -102,6 +102,10 @@ class VariableEntityType(StrEnum):
     OBJECT = "object"
     ARRAY_OBJECT = "array[object]"
     JSON_OBJECT = "json_object"
+    # Array types for type validation
+    ARRAY_STRING = "array[string]"
+    ARRAY_NUMBER = "array[number]"
+    ARRAY_BOOLEAN = "array[boolean]"
 
     def is_nestable(self) -> bool:
         """Check if this type supports child variables."""

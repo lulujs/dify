@@ -202,6 +202,10 @@ export enum InputVarType {
   singleFile = 'file',
   multiFiles = 'file-list',
   loop = 'loop', // loop input
+  arrayString = 'array[string]', // array of strings
+  arrayNumber = 'array[number]', // array of numbers
+  arrayBoolean = 'array[boolean]', // array of booleans
+  arrayObject = 'array[object]', // array of objects, supports nested children
 }
 
 export type InputVar = {

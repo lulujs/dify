@@ -181,6 +181,24 @@ class BaseAppGenerator:
                 else:
                     if not isinstance(value, dict):
                         raise ValueError(f"{variable_entity.variable} in input form must be an object")
+            case VariableEntityType.ARRAY_STRING:
+                # Array of strings type validation
+                if not isinstance(value, list):
+                    raise ValueError(f"{variable_entity.variable} in input form must be an array of strings")
+                if not all(isinstance(item, str) for item in value):
+                    raise ValueError(f"{variable_entity.variable} in input form must be an array of strings")
+            case VariableEntityType.ARRAY_NUMBER:
+                # Array of numbers type validation
+                if not isinstance(value, list):
+                    raise ValueError(f"{variable_entity.variable} in input form must be an array of numbers")
+                if not all(isinstance(item, (int, float)) for item in value):
+                    raise ValueError(f"{variable_entity.variable} in input form must be an array of numbers")
+            case VariableEntityType.ARRAY_BOOLEAN:
+                # Array of booleans type validation
+                if not isinstance(value, list):
+                    raise ValueError(f"{variable_entity.variable} in input form must be an array of booleans")
+                if not all(isinstance(item, bool) for item in value):
+                    raise ValueError(f"{variable_entity.variable} in input form must be an array of booleans")
             case VariableEntityType.NUMBER:
                 # NUMBER type is already handled above, this case is for exhaustive matching
                 pass

@@ -4,6 +4,7 @@ import React from 'react'
 import {
   RiAlignLeft,
   RiBracesLine,
+  RiBracketsLine,
   RiCheckboxLine,
   RiCheckboxMultipleLine,
   RiFileCopy2Line,
@@ -28,6 +29,10 @@ const getIcon = (type: InputVarType) => {
     [InputVarType.jsonObject]: RiBracesLine,
     [InputVarType.singleFile]: RiFileList2Line,
     [InputVarType.multiFiles]: RiFileCopy2Line,
+    [InputVarType.arrayString]: RiBracketsLine,
+    [InputVarType.arrayNumber]: RiBracketsLine,
+    [InputVarType.arrayBoolean]: RiBracketsLine,
+    [InputVarType.arrayObject]: RiBracketsLine,
   } as any)[type] || RiTextSnippet
 }
 

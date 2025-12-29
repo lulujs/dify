@@ -1338,6 +1338,14 @@ const translation = {
       arrayObject: 'Array[Object]',
       arrayFile: 'Array[File]',
     },
+    jsonImport: {
+      button: 'Edit JSON',
+      title: 'Edit JSON',
+      description: 'Edit JSON to define variable structure',
+      emptyError: 'Please enter JSON content',
+      objectError: 'JSON must be an object',
+      parseError: 'Invalid JSON format',
+    },
   },
 }
 

@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useContext } from 'use-context-selector'
 import { produce } from 'immer'
+import { RiBracesLine } from '@remixicon/react'
 import ModalFoot from '../modal-foot'
 import ConfigSelect from '../config-select'
 import ConfigString from '../config-string'
@@ -22,15 +23,13 @@ import { DEFAULT_VALUE_MAX_LEN } from '@/config'
 import type { Item as SelectItem } from './type-select'
 import TypeSelector from './type-select'
 import { SimpleSelect } from '@/app/components/base/select'
-import CodeEditor from '@/app/components/workflow/nodes/_base/components/editor/code-editor'
-import { CodeLanguage } from '@/app/components/workflow/nodes/code/types'
-import { jsonConfigPlaceHolder, jsonObjectWrap } from './config'
 import { useStore as useAppStore } from '@/app/components/app/store'
 import Textarea from '@/app/components/base/textarea'
 import { FileUploaderInAttachmentWrapper } from '@/app/components/base/file-uploader'
 import { AppModeEnum, TransferMethod } from '@/types/app'
 import type { FileEntity } from '@/app/components/base/file-uploader/types'
 import NestedVariableEditor from '@/app/components/workflow/nodes/_base/components/nested-variable-editor'
+import JsonEditModal from '@/app/components/workflow/nodes/_base/components/nested-variable-editor/json-import-modal'
 import { inputVarChildrenToNestedDefinitions, nestedDefinitionsToInputVarChildren } from '@/app/components/workflow/nodes/start/utils'
 
 const TEXT_MAX_LENGTH = 256
@@ -74,17 +73,7 @@ const ConfigModal: FC<IConfigModalProps> = ({
   const appDetail = useAppStore(state => state.appDetail)
   const isBasicApp = appDetail?.mode !== AppModeEnum.ADVANCED_CHAT && appDetail?.mode !== AppModeEnum.WORKFLOW
   const isSupportJSON = true // Enable JSON object type for nested variable support
-  const jsonSchemaStr = useMemo(() => {
-    const isJsonObject = type === InputVarType.jsonObject
-    if (!isJsonObject || !tempPayload.json_schema)
-      return ''
-    try {
-      return JSON.stringify(JSON.parse(tempPayload.json_schema).properties, null, 2)
-    }
-    catch {
-      return ''
-    }
-  }, [tempPayload.json_schema])
+  const [showJsonEditModal, setShowJsonEditModal] = useState(false)
   useEffect(() => {
     // To fix the first input element auto focus, then directly close modal will raise error
     if (isShow)
@@ -123,20 +112,6 @@ const ConfigModal: FC<IConfigModalProps> = ({
     }
   }, [])
 
-  const handleJSONSchemaChange = useCallback((value: string) => {
-    try {
-      const v = JSON.parse(value)
-      const res = {
-        ...jsonObjectWrap,
-        properties: v,
-      }
-      handlePayloadChange('json_schema')(JSON.stringify(res, null, 2))
-    }
-    catch {
-      return null
-    }
-  }, [handlePayloadChange])
-
   const selectOptions: SelectItem[] = [
     {
       name: t('appDebug.variableConfig.text-input'),
@@ -168,10 +143,28 @@ const ConfigModal: FC<IConfigModalProps> = ({
         value: InputVarType.multiFiles,
       },
     ] : []),
-    ...((!isBasicApp && isSupportJSON) ? [{
-      name: t('appDebug.variableConfig.json'),
-      value: InputVarType.jsonObject,
-    }] : []),
+    ...((!isBasicApp && isSupportJSON) ? [
+      {
+        name: t('appDebug.variableConfig.json'),
+        value: InputVarType.jsonObject,
+      },
+      {
+        name: t('appDebug.variableConfig.arrayString') || 'Array[String]',
+        value: InputVarType.arrayString,
+      },
+      {
+        name: t('appDebug.variableConfig.arrayNumber') || 'Array[Number]',
+        value: InputVarType.arrayNumber,
+      },
+      {
+        name: t('appDebug.variableConfig.arrayBoolean') || 'Array[Boolean]',
+        value: InputVarType.arrayBoolean,
+      },
+      {
+        name: t('appDebug.variableConfig.arrayObject') || 'Array[Object]',
+        value: InputVarType.arrayObject,
+      },
+    ] : []),
   ]
 
   const handleTypeChange = useCallback((item: SelectItem) => {
@@ -420,32 +413,41 @@ const ConfigModal: FC<IConfigModalProps> = ({
             </>
           )}
 
-          {type === InputVarType.jsonObject && (
-            <Field title={t('appDebug.variableConfig.jsonSchema')} isOptional>
-              <CodeEditor
-                language={CodeLanguage.json}
-                value={jsonSchemaStr}
-                onChange={handleJSONSchemaChange}
-                noWrapper
-                className='bg h-[80px] overflow-y-auto rounded-[10px] bg-components-input-bg-normal p-1'
-                placeholder={
-                  <div className='whitespace-pre'>{jsonConfigPlaceHolder}</div>
+          {/* Nested Variable Editor for jsonObject and arrayObject types */}
+          {(type === InputVarType.jsonObject || type === InputVarType.arrayObject) && (
+            <>
+              <Field
+                title={t('workflow.nestedVariable.childVariables') || 'Child Variables'}
+                isOptional
+                headerAction={
+                  <button
+                    type="button"
+                    onClick={() => setShowJsonEditModal(true)}
+                    className="flex h-6 items-center gap-1 rounded-md px-2 text-xs font-medium text-text-accent hover:bg-state-accent-hover"
+                  >
+                    <RiBracesLine className="h-3.5 w-3.5" />
+                    {t('workflow.nestedVariable.jsonImport.button') || 'Edit JSON'}
+                  </button>
                 }
-              />
-            </Field>
-          )}
-
-          {/* Nested Variable Editor for jsonObject type */}
-          {type === InputVarType.jsonObject && (
-            <Field title={t('workflow.nestedVariable.childVariables') || 'Child Variables'} isOptional>
-              <NestedVariableEditor
-                value={inputVarChildrenToNestedDefinitions(tempPayload.children)}
-                onChange={(definitions) => {
+              >
+                <NestedVariableEditor
+                  value={inputVarChildrenToNestedDefinitions(tempPayload.children)}
+                  onChange={(definitions) => {
+                    const children = nestedDefinitionsToInputVarChildren(definitions)
+                    handlePayloadChange('children')(children.length > 0 ? children : undefined)
+                  }}
+                />
+              </Field>
+              <JsonEditModal
+                isShow={showJsonEditModal}
+                initialValue={inputVarChildrenToNestedDefinitions(tempPayload.children)}
+                onClose={() => setShowJsonEditModal(false)}
+                onConfirm={(definitions) => {
                   const children = nestedDefinitionsToInputVarChildren(definitions)
                   handlePayloadChange('children')(children.length > 0 ? children : undefined)
                 }}
               />
-            </Field>
+            </>
           )}
 
           <div className='!mt-5 flex h-6 items-center space-x-2'>

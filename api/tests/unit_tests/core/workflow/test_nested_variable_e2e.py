@@ -1912,3 +1912,166 @@ class TestBaseAppGeneratorNestedVariables:
         )
 
         assert result["a"] == {"var_1766974683066": "test value"}
+
+
+class TestArrayTypeValidation:
+    """Tests for new array type validation (array[string], array[number], array[boolean])."""
+
+    def test_validate_inputs_with_array_string_type(self):
+        """
+        Test that _validate_inputs correctly handles array[string] type.
+        """
+        from core.app.app_config.entities import VariableEntity, VariableEntityType
+        from core.app.apps.base_app_generator import BaseAppGenerator
+
+        generator = BaseAppGenerator()
+
+        variable_entity = VariableEntity(
+            variable="tags",
+            label="Tags",
+            type=VariableEntityType.ARRAY_STRING,
+            required=True,
+        )
+
+        # Valid input - a list of strings
+        value = ["tag1", "tag2", "tag3"]
+        result = generator._validate_inputs(variable_entity=variable_entity, value=value)
+        assert result == value
+
+    def test_validate_inputs_with_array_number_type(self):
+        """
+        Test that _validate_inputs correctly handles array[number] type.
+        """
+        from core.app.app_config.entities import VariableEntity, VariableEntityType
+        from core.app.apps.base_app_generator import BaseAppGenerator
+
+        generator = BaseAppGenerator()
+
+        variable_entity = VariableEntity(
+            variable="scores",
+            label="Scores",
+            type=VariableEntityType.ARRAY_NUMBER,
+            required=True,
+        )
+
+        # Valid input - a list of numbers (int and float)
+        value = [1, 2.5, 3, 4.7]
+        result = generator._validate_inputs(variable_entity=variable_entity, value=value)
+        assert result == value
+
+    def test_validate_inputs_with_array_boolean_type(self):
+        """
+        Test that _validate_inputs correctly handles array[boolean] type.
+        """
+        from core.app.app_config.entities import VariableEntity, VariableEntityType
+        from core.app.apps.base_app_generator import BaseAppGenerator
+
+        generator = BaseAppGenerator()
+
+        variable_entity = VariableEntity(
+            variable="flags",
+            label="Flags",
+            type=VariableEntityType.ARRAY_BOOLEAN,
+            required=True,
+        )
+
+        # Valid input - a list of booleans
+        value = [True, False, True]
+        result = generator._validate_inputs(variable_entity=variable_entity, value=value)
+        assert result == value
+
+    def test_validate_inputs_rejects_non_list_for_array_string(self):
+        """
+        Test that _validate_inputs rejects non-list values for array[string] type.
+        """
+        from core.app.app_config.entities import VariableEntity, VariableEntityType
+        from core.app.apps.base_app_generator import BaseAppGenerator
+
+        generator = BaseAppGenerator()
+
+        variable_entity = VariableEntity(
+            variable="tags",
+            label="Tags",
+            type=VariableEntityType.ARRAY_STRING,
+            required=True,
+        )
+
+        # Invalid input - a string instead of list
+        with pytest.raises(ValueError, match="must be an array of strings"):
+            generator._validate_inputs(variable_entity=variable_entity, value="not a list")
+
+    def test_validate_inputs_rejects_wrong_element_type_for_array_string(self):
+        """
+        Test that _validate_inputs rejects list with non-string elements for array[string] type.
+        """
+        from core.app.app_config.entities import VariableEntity, VariableEntityType
+        from core.app.apps.base_app_generator import BaseAppGenerator
+
+        generator = BaseAppGenerator()
+
+        variable_entity = VariableEntity(
+            variable="tags",
+            label="Tags",
+            type=VariableEntityType.ARRAY_STRING,
+            required=True,
+        )
+
+        # Invalid input - list with numbers instead of strings
+        with pytest.raises(ValueError, match="must be an array of strings"):
+            generator._validate_inputs(variable_entity=variable_entity, value=[1, 2, 3])
+
+    def test_validate_inputs_rejects_wrong_element_type_for_array_number(self):
+        """
+        Test that _validate_inputs rejects list with non-number elements for array[number] type.
+        """
+        from core.app.app_config.entities import VariableEntity, VariableEntityType
+        from core.app.apps.base_app_generator import BaseAppGenerator
+
+        generator = BaseAppGenerator()
+
+        variable_entity = VariableEntity(
+            variable="scores",
+            label="Scores",
+            type=VariableEntityType.ARRAY_NUMBER,
+            required=True,
+        )
+
+        # Invalid input - list with strings instead of numbers
+        with pytest.raises(ValueError, match="must be an array of numbers"):
+            generator._validate_inputs(variable_entity=variable_entity, value=["a", "b", "c"])
+
+    def test_validate_inputs_rejects_wrong_element_type_for_array_boolean(self):
+        """
+        Test that _validate_inputs rejects list with non-boolean elements for array[boolean] type.
+        """
+        from core.app.app_config.entities import VariableEntity, VariableEntityType
+        from core.app.apps.base_app_generator import BaseAppGenerator
+
+        generator = BaseAppGenerator()
+
+        variable_entity = VariableEntity(
+            variable="flags",
+            label="Flags",
+            type=VariableEntityType.ARRAY_BOOLEAN,
+            required=True,
+        )
+
+        # Invalid input - list with strings instead of booleans
+        with pytest.raises(ValueError, match="must be an array of booleans"):
+            generator._validate_inputs(variable_entity=variable_entity, value=["true", "false"])
+
+    def test_variable_entity_type_includes_array_types(self):
+        """
+        Test that VariableEntityType includes the new array types.
+        """
+        from core.app.app_config.entities import VariableEntityType
+
+        # Verify new types exist
+        assert VariableEntityType.ARRAY_STRING == "array[string]"
+        assert VariableEntityType.ARRAY_NUMBER == "array[number]"
+        assert VariableEntityType.ARRAY_BOOLEAN == "array[boolean]"
+
+        # Verify they are not nestable (only array[object] is nestable)
+        assert VariableEntityType.ARRAY_STRING.is_nestable() is False
+        assert VariableEntityType.ARRAY_NUMBER.is_nestable() is False
+        assert VariableEntityType.ARRAY_BOOLEAN.is_nestable() is False
