@@ -7,17 +7,17 @@ export enum CodeLanguage {
 }
 
 /**
- * Output variable definition for Code node.
- * Supports nested children for object and array[object] types.
+ * Output variable child definition for Code node.
+ * Uses dict format keyed by variable name to match backend structure.
  */
 export type OutputVarChild = {
   type: VarType
-  children?: OutputVarChild | null
+  children?: Record<string, OutputVarChild> | null // dict of children keyed by name
 }
 
 export type OutputVar = Record<string, {
   type: VarType
-  children: OutputVarChild | null // supports nested structure for object types
+  children: Record<string, OutputVarChild> | null // dict of children keyed by name
 }>
 
 export type CodeDependency = {

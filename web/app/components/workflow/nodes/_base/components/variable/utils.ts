@@ -1,6 +1,6 @@
 import { produce } from 'immer'
 import { isArray, uniq } from 'lodash-es'
-import type { CodeNodeType } from '../../../code/types'
+import type { CodeNodeType, OutputVarChild } from '../../../code/types'
 import type { EndNodeType } from '../../../end/types'
 import type { AnswerNodeType } from '../../../answer/types'
 import {
@@ -144,6 +144,29 @@ export const inputVarChildrenToVarChildren = (children: InputVarChild[] | undefi
 
     return varRes
   })
+}
+
+/**
+ * Converts OutputVarChild dict (from Code node) to Var array for variable selector support.
+ * This enables nested path selection for code node output variables.
+ */
+export const convertOutputVarChildrenToVarChildren = (children: Record<string, OutputVarChild> | null | undefined): Var[] => {
+  if (!children || Object.keys(children).length === 0)
+    return []
+
+  return Object.entries(children)
+    .filter(([_, child]) => child !== null && child !== undefined)
+    .map(([name, child]): Var => {
+      const varRes: Var = {
+        variable: name,
+        type: child.type,
+      }
+      // Recursively convert nested children
+      if (child.children && Object.keys(child.children).length > 0)
+        varRes.children = convertOutputVarChildrenToVarChildren(child.children)
+
+      return varRes
+    })
 }
 
 const structTypeToVarType = (type: Type, isArray?: boolean): VarType => {
@@ -447,10 +470,16 @@ const formatItem = (
       const { outputs } = data as CodeNodeType
       res.vars = outputs
         ? Object.keys(outputs).map((key) => {
-          return {
+          const output = outputs[key]
+          const varRes: Var = {
             variable: key,
-            type: outputs[key].type,
+            type: output.type,
           }
+          // Convert OutputVarChild dict to Var[] for nested children support
+          if (output.children && Object.keys(output.children).length > 0)
+            varRes.children = convertOutputVarChildrenToVarChildren(output.children)
+
+          return varRes
         })
         : []
       break
