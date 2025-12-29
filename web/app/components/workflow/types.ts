@@ -225,7 +225,27 @@ export type InputVar = {
   hide?: boolean
   isFileItem?: boolean
   json_schema?: string // for jsonObject type
+  children?: InputVarChild[] // for nested variable support (object/array[object] types)
 } & Partial<UploadFileSetting>
+
+/**
+ * Child variable definition for nested variable support.
+ * Used when InputVarType is jsonObject to define the structure of nested objects.
+ */
+export type InputVarChild = {
+  /** Variable name - must start with letter, contain only alphanumeric and underscore */
+  variable: string
+  /** Variable type */
+  type: InputVarType
+  /** Whether the variable is required */
+  required: boolean
+  /** Optional description */
+  description?: string
+  /** Default value */
+  default?: unknown
+  /** Nested children for object types */
+  children?: InputVarChild[]
+}
 
 export type ModelConfig = {
   provider: string

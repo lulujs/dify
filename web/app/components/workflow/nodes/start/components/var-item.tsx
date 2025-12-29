@@ -5,6 +5,7 @@ import { useBoolean, useHover } from 'ahooks'
 import { useTranslation } from 'react-i18next'
 import {
   RiDeleteBinLine,
+  RiNodeTree,
 } from '@remixicon/react'
 import InputVarTypeIcon from '../../_base/components/input-var-type-icon'
 import type { InputVar, MoreInfo } from '@/app/components/workflow/types'
@@ -47,6 +48,8 @@ const VarItem: FC<Props> = ({
     setFalse: hideEditVarModal,
   }] = useBoolean(false)
 
+  const hasChildren = payload.children && payload.children.length > 0
+
   const handlePayloadChange = useCallback((payload: InputVar, moreInfo?: MoreInfo) => {
     const isValid = onChange(payload, moreInfo)
     if(!isValid)
@@ -65,6 +68,13 @@ const VarItem: FC<Props> = ({
           <Badge
             text='LEGACY'
             className='shrink-0 border-text-accent-secondary text-text-accent-secondary'
+          />
+        )}
+        {/* Nested variable indicator */}
+        {hasChildren && (
+          <Badge
+            text={<span className='flex items-center gap-0.5'><RiNodeTree className='h-3 w-3' />{payload.children!.length}</span>}
+            className='shrink-0 border-util-colors-blue-blue-600 text-util-colors-blue-blue-600'
           />
         )}
       </div>

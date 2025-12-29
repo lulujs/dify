@@ -134,3 +134,85 @@ class TestVariablePoolGetNotModifyVariableDictionary:
         pool.get([self._NODE_ID, "count"])
         start_subdict = pool.variable_dictionary[self._NODE_ID]
         assert "count" not in start_subdict
+
+
+class TestVariablePoolNestedPathSupport:
+    """Test nested path support for variable pool operations."""
+
+    def test_get_deeply_nested_attribute(self):
+        """Test accessing deeply nested attributes (up to 5 levels)."""
+        pool = VariablePool.empty()
+        nested_obj = {"level1": {"level2": {"level3": {"level4": {"level5": "deep_value"}}}}}
+        pool.add(("node1", "data"), nested_obj)
+
+        # Access 5 levels deep
+        segment = pool.get(("node1", "data", "level1", "level2", "level3", "level4", "level5"))
+        assert segment is not None
+        assert segment.value == "deep_value"
+
+    def test_convert_template_with_nested_paths(self):
+        """Test convert_template with nested object paths."""
+        pool = VariablePool.empty()
+        pool.add(("node1", "user"), {"name": "John", "profile": {"email": "john@example.com", "age": 25}})
+
+        template = (
+            "Hello, {{#node1.user.name#}}! Email: {{#node1.user.profile.email#}}, Age: {{#node1.user.profile.age#}}"
+        )
+        result = pool.convert_template(template)
+
+        assert result.text == "Hello, John! Email: john@example.com, Age: 25"
+
+    def test_convert_template_with_nonexistent_nested_path(self):
+        """Test convert_template when nested path doesn't exist."""
+        pool = VariablePool.empty()
+        pool.add(("node1", "user"), {"name": "John"})
+
+        # Non-existent nested path should be treated as text
+        template = "{{#node1.user.nonexistent.path#}}"
+        result = pool.convert_template(template)
+
+        # When path doesn't exist, it's treated as plain text
+        assert result.text == "node1.user.nonexistent.path"
+
+    def test_get_nested_method_with_dot_notation(self):
+        """Test get_nested method with dot-notation path."""
+        pool = VariablePool.empty()
+        pool.add(("node1", "data"), {"user": {"profile": {"name": "Alice"}}})
+
+        # Using get_nested with dot-notation
+        segment = pool.get_nested(("node1", "data"), "user.profile.name")
+        assert segment is not None
+        assert segment.value == "Alice"
+
+        # Without nested_path, returns the whole object
+        segment_full = pool.get_nested(("node1", "data"))
+        assert segment_full is not None
+        assert isinstance(segment_full.value, dict)
+
+    def test_set_nested_method(self):
+        """Test set_nested method for updating nested values."""
+        pool = VariablePool.empty()
+        pool.add(("node1", "data"), {"user": {"name": "Original"}})
+
+        # Update nested value
+        success = pool.set_nested(("node1", "data"), "user.name", "Updated")
+        assert success is True
+
+        # Verify the update
+        segment = pool.get(("node1", "data", "user", "name"))
+        assert segment is not None
+        assert segment.value == "Updated"
+
+    def test_set_nested_creates_intermediate_paths(self):
+        """Test that set_nested creates intermediate paths if they don't exist."""
+        pool = VariablePool.empty()
+        pool.add(("node1", "data"), {})
+
+        # Set a nested value where intermediate paths don't exist
+        success = pool.set_nested(("node1", "data"), "new.nested.path", "value")
+        assert success is True
+
+        # Verify the nested structure was created
+        segment = pool.get(("node1", "data", "new", "nested", "path"))
+        assert segment is not None
+        assert segment.value == "value"

@@ -12,6 +12,7 @@ from werkzeug.exceptions import Forbidden, InternalServerError, NotFound
 import services
 from controllers.console import console_ns
 from controllers.console.app.error import ConversationCompletedError, DraftWorkflowNotExist, DraftWorkflowNotSync
+from controllers.console.app.nested_variable_utils import validate_graph_nested_variables
 from controllers.console.app.wraps import get_app_model
 from controllers.console.wraps import account_initialization_required, edit_permission_required, setup_required
 from controllers.web.error import InvokeRateLimitError as InvokeRateLimitHttpError
@@ -300,6 +301,13 @@ class DraftWorkflowApi(Resource):
         args_model = SyncDraftWorkflowPayload.model_validate(payload_data)
         args = args_model.model_dump()
         workflow_service = WorkflowService()
+
+        # Validate nested variables in the graph
+        graph = args.get("graph", {})
+        nested_var_errors = validate_graph_nested_variables(graph)
+        if nested_var_errors:
+            error_messages = [str(e) for e in nested_var_errors]
+            return {"message": "Invalid nested variable configuration", "errors": error_messages}, 400
 
         try:
             environment_variables_list = args.get("environment_variables") or []

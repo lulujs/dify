@@ -122,11 +122,19 @@ endpoints:
     conditions:
       response_type: "streaming"
   
+  # === Console API Endpoints (Excluded) ===
+  
+  # Console API endpoints should NOT be enhanced
+  # These are internal admin endpoints with different response formats
+  - pattern: "/console/*"
+    processors: []
+    enabled: false
+  
   # === Default Fallback ===
   
   # Catch-all pattern for any other Service API endpoints
   # This ensures all endpoints get basic metadata enhancement
-  - pattern: "*"
+  - pattern: "/v1/*"
     processors: ["metadata"]
     enabled: true
 

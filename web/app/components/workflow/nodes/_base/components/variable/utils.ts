@@ -30,6 +30,7 @@ import type { StartNodeType } from '@/app/components/workflow/nodes/start/types'
 import type {
   ConversationVariable,
   EnvironmentVariable,
+  InputVarChild,
   Node,
   NodeOutPutVar,
   ToolWithProvider,
@@ -117,6 +118,32 @@ export const inputVarTypeToVarType = (type: InputVarType): VarType => {
       } as any
     )[type] || VarType.string
   )
+}
+
+/**
+ * Converts InputVarChild array to Var array for variable selector support.
+ * This enables nested path selection in the variable reference picker.
+ *
+ * @see Requirements 4.1, 4.2 - Variable selector nested path support
+ */
+export const inputVarChildrenToVarChildren = (children: InputVarChild[] | undefined): Var[] => {
+  if (!children || children.length === 0)
+    return []
+
+  return children.map((child): Var => {
+    const varType = inputVarTypeToVarType(child.type)
+    const varRes: Var = {
+      variable: child.variable,
+      type: varType,
+      des: child.description,
+      required: child.required,
+    }
+    // Recursively convert nested children
+    if (child.children && child.children.length > 0)
+      varRes.children = inputVarChildrenToVarChildren(child.children)
+
+    return varRes
+  })
 }
 
 const structTypeToVarType = (type: Type, isArray?: boolean): VarType => {
@@ -345,7 +372,12 @@ const formatItem = (
           required: v.required,
         }
         try {
-          if (type === VarType.object && v.json_schema) {
+          // Priority: children (InputVarChild[]) > json_schema
+          // children provides better nested path selection support
+          if (type === VarType.object && v.children && v.children.length > 0) {
+            varRes.children = inputVarChildrenToVarChildren(v.children)
+          }
+          else if (type === VarType.object && v.json_schema) {
             varRes.children = {
               schema: JSON.parse(v.json_schema),
             }

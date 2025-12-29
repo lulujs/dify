@@ -25,6 +25,7 @@ import { FILE_EXTS } from '@/app/components/base/prompt-editor/constants'
 import cn from '@/utils/classnames'
 import type { FileEntity } from '@/app/components/base/file-uploader/types'
 import BoolInput from './bool-input'
+import NestedObjectInput from './nested-object-input'
 import { useHooksStore } from '@/app/components/workflow/hooks-store'
 
 type Props = {
@@ -200,7 +201,16 @@ const FormItem: FC<Props> = ({
             />
           )
         }
-        {type === InputVarType.jsonObject && (
+        {type === InputVarType.jsonObject && payload.children && payload.children.length > 0 && (
+          <div className='rounded-lg border border-components-panel-border bg-components-panel-bg p-3'>
+            <NestedObjectInput
+              definition={payload.children}
+              value={typeof value === 'object' && value !== null ? value : {}}
+              onChange={onChange}
+            />
+          </div>
+        )}
+        {type === InputVarType.jsonObject && (!payload.children || payload.children.length === 0) && (
           <CodeEditor
             value={value}
             language={CodeLanguage.json}

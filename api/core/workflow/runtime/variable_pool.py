@@ -2,7 +2,7 @@ import re
 from collections import defaultdict
 from collections.abc import Mapping, Sequence
 from copy import deepcopy
-from typing import Annotated, Any, Union, cast
+from typing import TYPE_CHECKING, Annotated, Any, Union, cast
 
 from pydantic import BaseModel, Field
 
@@ -19,6 +19,9 @@ from core.workflow.constants import (
 )
 from core.workflow.system_variable import SystemVariable
 from factories import variable_factory
+
+if TYPE_CHECKING:
+    from core.workflow.entities.nested_variable import NestedVariableDefinition
 
 VariableValue = Union[str, int, float, dict[str, object], list[object], File]
 
@@ -253,6 +256,210 @@ class VariablePool(BaseModel):
             result[key] = deepcopy(value)
 
         return result
+
+    def add_nested(
+        self,
+        selector: Sequence[str],
+        value: Any,
+        definition: "NestedVariableDefinition | None" = None,
+        /,
+    ) -> None:
+        """
+        Add a nested variable to the variable pool with optional validation.
+
+        This method stores a nested variable (typically an object or array with
+        nested structure) and optionally validates it against a definition.
+
+        Args:
+            selector: A two-element sequence containing [node_id, variable_name].
+            value: The nested variable value to store.
+            definition: Optional variable definition for validation.
+
+        Raises:
+            ValueError: If validation fails when a definition is provided.
+
+        Note:
+            When a definition is provided, the value is validated against it
+            before being stored. This ensures type safety and required field
+            presence for nested structures.
+        """
+        if definition is not None:
+            self._validate_nested_value(value, definition)
+        self.add(selector, value)
+
+    def get_nested(
+        self,
+        selector: Sequence[str],
+        nested_path: str | None = None,
+        /,
+    ) -> Segment | None:
+        """
+        Get a nested variable value using dot-notation path.
+
+        This method retrieves a variable from the pool and optionally navigates
+        into its nested structure using a dot-notation path.
+
+        Args:
+            selector: A sequence with at least 2 elements [node_id, variable_name].
+            nested_path: Optional dot-notation path to access nested values
+                        (e.g., 'user.profile.name').
+
+        Returns:
+            The Segment at the specified path, or None if not found.
+
+        Examples:
+            # Get the entire nested object
+            pool.get_nested(["node_1", "user_data"])
+
+            # Get a nested value using dot-notation
+            pool.get_nested(["node_1", "user_data"], "profile.email")
+        """
+        if nested_path:
+            path_parts = nested_path.split(".")
+            extended_selector = list(selector) + path_parts
+            return self.get(extended_selector)
+        return self.get(selector)
+
+    def set_nested(
+        self,
+        selector: Sequence[str],
+        nested_path: str,
+        value: Any,
+        /,
+    ) -> bool:
+        """
+        Set a nested variable value while maintaining immutability.
+
+        This method updates a value within a nested structure by creating a new
+        copy of the entire structure with the modification applied. The original
+        value remains unchanged, preserving immutability.
+
+        Args:
+            selector: A two-element sequence containing [node_id, variable_name].
+            nested_path: Dot-notation path to the value to set
+                        (e.g., 'user.profile.name').
+            value: The new value to set at the specified path.
+
+        Returns:
+            True if the value was successfully set, False otherwise.
+            Returns False if:
+            - The root variable doesn't exist
+            - The root variable is not an ObjectSegment
+            - The path navigation fails (intermediate values are not dicts)
+
+        Note:
+            This method creates a deep copy of the entire nested structure
+            to maintain immutability. The original variable is not modified.
+
+        Examples:
+            # Update a nested value
+            success = pool.set_nested(
+                ["node_1", "user_data"],
+                "profile.email",
+                "new@example.com"
+            )
+        """
+        root_segment = self.get(selector)
+        if root_segment is None:
+            return False
+
+        if not isinstance(root_segment, ObjectSegment):
+            return False
+
+        # Deep copy to maintain immutability
+        new_obj = deepcopy(dict(root_segment.value))
+
+        # Navigate to the parent of the target and set the value
+        parts = nested_path.split(".")
+        current: dict[str, Any] = new_obj
+
+        for part in parts[:-1]:
+            if part not in current:
+                current[part] = {}
+            elif not isinstance(current[part], dict):
+                return False
+            current = current[part]
+
+        # Set the final value
+        current[parts[-1]] = value
+
+        # Store the updated object
+        self.add(selector, new_obj)
+        return True
+
+    def _validate_nested_value(
+        self,
+        value: Any,
+        definition: "NestedVariableDefinition",
+        path: str = "",
+    ) -> None:
+        """
+        Validate a value against a nested variable definition.
+
+        Args:
+            value: The value to validate.
+            definition: The variable definition to validate against.
+            path: Current path for error reporting (used in recursion).
+
+        Raises:
+            ValueError: If validation fails with details about the failure.
+        """
+        from core.workflow.entities.nested_variable import NestedVariableType
+
+        current_path = f"{path}.{definition.name}" if path else definition.name
+
+        # Check required field
+        if value is None:
+            if definition.required:
+                raise ValueError(f"Required field '{current_path}' is missing")
+            return
+
+        # Type validation mapping
+        type_validators: dict[NestedVariableType, tuple[type | tuple[type, ...], str]] = {
+            NestedVariableType.STRING: (str, "string"),
+            NestedVariableType.INTEGER: (int, "integer"),
+            NestedVariableType.NUMBER: ((int, float), "number"),
+            NestedVariableType.BOOLEAN: (bool, "boolean"),
+            NestedVariableType.OBJECT: (dict, "object"),
+            NestedVariableType.ARRAY_STRING: (list, "array[string]"),
+            NestedVariableType.ARRAY_INTEGER: (list, "array[integer]"),
+            NestedVariableType.ARRAY_NUMBER: (list, "array[number]"),
+            NestedVariableType.ARRAY_OBJECT: (list, "array[object]"),
+            NestedVariableType.ARRAY_BOOLEAN: (list, "array[boolean]"),
+            NestedVariableType.ARRAY_FILE: (list, "array[file]"),
+        }
+
+        validator = type_validators.get(definition.type)
+        if validator:
+            expected_type, type_name = validator
+
+            # Special case: bool is a subclass of int in Python
+            if definition.type == NestedVariableType.INTEGER and isinstance(value, bool):
+                raise ValueError(f"Type mismatch at '{current_path}': expected {type_name}, got boolean")
+
+            # Special case: for NUMBER type, exclude bool
+            if definition.type == NestedVariableType.NUMBER and isinstance(value, bool):
+                raise ValueError(f"Type mismatch at '{current_path}': expected {type_name}, got boolean")
+
+            if not isinstance(value, expected_type):
+                raise ValueError(f"Type mismatch at '{current_path}': expected {type_name}, got {type(value).__name__}")
+
+        # Recursively validate children for object types
+        if definition.children and isinstance(value, dict):
+            for child_def in definition.children:
+                child_value = value.get(child_def.name)
+                self._validate_nested_value(child_value, child_def, current_path)
+
+        # Validate array elements for array[object] type
+        if definition.type == NestedVariableType.ARRAY_OBJECT and definition.children:
+            if isinstance(value, list):
+                for i, item in enumerate(value):
+                    item_path = f"{current_path}[{i}]"
+                    if not isinstance(item, dict):
+                        raise ValueError(f"Array element at '{item_path}' must be an object")
+                    for child_def in definition.children:
+                        child_value = item.get(child_def.name)
+                        self._validate_nested_value(child_value, child_def, item_path)
 
     def _add_system_variables(self, system_variable: SystemVariable):
         sys_var_mapping = system_variable.to_dict()

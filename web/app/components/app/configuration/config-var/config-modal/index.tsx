@@ -30,6 +30,8 @@ import Textarea from '@/app/components/base/textarea'
 import { FileUploaderInAttachmentWrapper } from '@/app/components/base/file-uploader'
 import { AppModeEnum, TransferMethod } from '@/types/app'
 import type { FileEntity } from '@/app/components/base/file-uploader/types'
+import NestedVariableEditor from '@/app/components/workflow/nodes/_base/components/nested-variable-editor'
+import { inputVarChildrenToNestedDefinitions, nestedDefinitionsToInputVarChildren } from '@/app/components/workflow/nodes/start/utils'
 
 const TEXT_MAX_LENGTH = 256
 const CHECKBOX_DEFAULT_TRUE_VALUE = 'true'
@@ -71,7 +73,7 @@ const ConfigModal: FC<IConfigModalProps> = ({
   const modalRef = useRef<HTMLDivElement>(null)
   const appDetail = useAppStore(state => state.appDetail)
   const isBasicApp = appDetail?.mode !== AppModeEnum.ADVANCED_CHAT && appDetail?.mode !== AppModeEnum.WORKFLOW
-  const isSupportJSON = false
+  const isSupportJSON = true // Enable JSON object type for nested variable support
   const jsonSchemaStr = useMemo(() => {
     const isJsonObject = type === InputVarType.jsonObject
     if (!isJsonObject || !tempPayload.json_schema)
@@ -429,6 +431,19 @@ const ConfigModal: FC<IConfigModalProps> = ({
                 placeholder={
                   <div className='whitespace-pre'>{jsonConfigPlaceHolder}</div>
                 }
+              />
+            </Field>
+          )}
+
+          {/* Nested Variable Editor for jsonObject type */}
+          {type === InputVarType.jsonObject && (
+            <Field title={t('workflow.nestedVariable.childVariables') || 'Child Variables'} isOptional>
+              <NestedVariableEditor
+                value={inputVarChildrenToNestedDefinitions(tempPayload.children)}
+                onChange={(definitions) => {
+                  const children = nestedDefinitionsToInputVarChildren(definitions)
+                  handlePayloadChange('children')(children.length > 0 ? children : undefined)
+                }}
               />
             </Field>
           )}

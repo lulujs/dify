@@ -6,9 +6,18 @@ export enum CodeLanguage {
   json = 'json',
 }
 
+/**
+ * Output variable definition for Code node.
+ * Supports nested children for object and array[object] types.
+ */
+export type OutputVarChild = {
+  type: VarType
+  children?: OutputVarChild | null
+}
+
 export type OutputVar = Record<string, {
   type: VarType
-  children: null // support nest in the future,
+  children: OutputVarChild | null // supports nested structure for object types
 }>
 
 export type CodeDependency = {

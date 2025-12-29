@@ -25,6 +25,33 @@ import { VariableIconWithColor } from '@/app/components/workflow/nodes/_base/com
 import { Variable02 } from '@/app/components/base/icons/src/vender/solid/development'
 import { VAR_SHOW_NAME_MAP } from '@/app/components/workflow/constants'
 
+/**
+ * Recursively converts Var[] children to StructuredOutput properties format
+ * This enables proper nested path selection for variables with deeply nested Var[] children
+ *
+ * @see Requirements 4.1, 4.2 - Variable selector nested path support
+ */
+const varChildrenToProperties = (children: Var[]): Record<string, Field> => {
+  const properties: Record<string, Field> = {}
+  children.forEach((child) => {
+    const fieldType: Field = {
+      type: varTypeToStructType(child.type),
+      description: child.des,
+    }
+    // Recursively convert nested Var[] children
+    if (
+      (child.type === VarType.object || child.type === VarType.file)
+      && child.children
+      && Array.isArray(child.children)
+      && child.children.length > 0
+    )
+      fieldType.properties = varChildrenToProperties(child.children as Var[])
+
+    properties[child.variable] = fieldType
+  })
+  return properties
+}
+
 type ItemProps = {
   nodeId: string
   title: string
@@ -96,13 +123,9 @@ const Item: FC<ItemProps> = ({
 
   const objStructuredOutput: StructuredOutput | null = useMemo(() => {
     if (!isObj) return null
-    const properties: Record<string, Field> = {}
     const childrenVars = (itemData.children as Var[]) || []
-    childrenVars.forEach((c) => {
-      properties[c.variable] = {
-        type: varTypeToStructType(c.type),
-      }
-    })
+    // Use recursive conversion to properly handle deeply nested Var[] structures
+    const properties = varChildrenToProperties(childrenVars)
     return {
       schema: {
         type: Type.object,

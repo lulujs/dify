@@ -74,13 +74,18 @@ class BaseAppGenerator:
         # Merge all inputs
         user_inputs = {**user_inputs, **files_inputs, **file_list_inputs}
 
-        # Check if all files are converted to File
-        if any(filter(lambda v: isinstance(v, dict), user_inputs.values())):
-            raise ValueError("Invalid input type")
-        if any(
-            filter(lambda v: isinstance(v, dict), filter(lambda item: isinstance(item, list), user_inputs.values()))
-        ):
-            raise ValueError("Invalid input type")
+        # Check if all files are converted to File (but allow dict values for nested object types)
+        nestable_types = {VariableEntityType.OBJECT, VariableEntityType.ARRAY_OBJECT, VariableEntityType.JSON_OBJECT}
+        for k, v in user_inputs.items():
+            if isinstance(v, dict):
+                # Allow dict values for nested object types, but not for FILE type (should be converted to File)
+                if entity_dictionary[k].type not in nestable_types:
+                    raise ValueError("Invalid input type")
+            elif isinstance(v, list):
+                # Allow list of dicts for ARRAY_OBJECT type
+                if any(isinstance(item, dict) for item in v):
+                    if entity_dictionary[k].type not in nestable_types:
+                        raise ValueError("Invalid input type")
 
         return user_inputs
 
@@ -166,8 +171,22 @@ class BaseAppGenerator:
                         value = True
                     elif value == 0:
                         value = False
-            case _:
-                raise AssertionError("this statement should be unreachable.")
+            case VariableEntityType.OBJECT | VariableEntityType.ARRAY_OBJECT | VariableEntityType.JSON_OBJECT:
+                # Nested variable types - validate that value is dict or list of dicts
+                if variable_entity.type == VariableEntityType.ARRAY_OBJECT:
+                    if not isinstance(value, list):
+                        raise ValueError(f"{variable_entity.variable} in input form must be an array of objects")
+                    if not all(isinstance(item, dict) for item in value):
+                        raise ValueError(f"{variable_entity.variable} in input form must be an array of objects")
+                else:
+                    if not isinstance(value, dict):
+                        raise ValueError(f"{variable_entity.variable} in input form must be an object")
+            case VariableEntityType.NUMBER:
+                # NUMBER type is already handled above, this case is for exhaustive matching
+                pass
+            case VariableEntityType.EXTERNAL_DATA_TOOL:
+                # External data tool type - no additional validation needed
+                pass
 
         return value
 

@@ -98,6 +98,14 @@ class VariableEntityType(StrEnum):
     FILE = "file"
     FILE_LIST = "file-list"
     CHECKBOX = "checkbox"
+    # Nested variable types
+    OBJECT = "object"
+    ARRAY_OBJECT = "array[object]"
+    JSON_OBJECT = "json_object"
+
+    def is_nestable(self) -> bool:
+        """Check if this type supports child variables."""
+        return self in (VariableEntityType.OBJECT, VariableEntityType.ARRAY_OBJECT, VariableEntityType.JSON_OBJECT)
 
 
 class VariableEntity(BaseModel):
@@ -107,7 +115,7 @@ class VariableEntity(BaseModel):
 
     # `variable` records the name of the variable in user inputs.
     variable: str
-    label: str
+    label: str = ""  # Made optional with default empty string for nested children
     description: str = ""
     type: VariableEntityType
     required: bool = False
@@ -118,6 +126,11 @@ class VariableEntity(BaseModel):
     allowed_file_types: Sequence[FileType] | None = Field(default_factory=list)
     allowed_file_extensions: Sequence[str] | None = Field(default_factory=list)
     allowed_file_upload_methods: Sequence[FileTransferMethod] | None = Field(default_factory=list)
+    # Nested variable children - only for object and array[object] types
+    children: Sequence["VariableEntity"] | None = Field(
+        default=None,
+        description="Child variable definitions, only for object and array[object] types",
+    )
 
     @field_validator("description", mode="before")
     @classmethod
@@ -128,6 +141,10 @@ class VariableEntity(BaseModel):
     @classmethod
     def convert_none_options(cls, v: Any) -> Sequence[str]:
         return v or []
+
+
+# Rebuild model to allow recursive type references
+VariableEntity.model_rebuild()
 
 
 class RagPipelineVariableEntity(VariableEntity):

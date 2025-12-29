@@ -6,6 +6,8 @@ import Field from './field'
 import cn from '@/utils/classnames'
 import { useHover } from 'ahooks'
 import type { ValueSelector } from '@/app/components/workflow/types'
+import { VarType } from '@/app/components/workflow/types'
+import { Type } from '../../../../../llm/types'
 
 type Props = {
   className?: string
@@ -14,6 +16,27 @@ type Props = {
   readonly?: boolean
   onSelect?: (valueSelector: ValueSelector) => void
   onHovering?: (value: boolean) => void
+  /**
+   * Optional filter function to validate type compatibility for nested paths.
+   * Returns true if the path should be selectable, false otherwise.
+   *
+   * @see Requirements 4.3 - Type compatibility validation
+   */
+  filterNestedPath?: (valueSelector: ValueSelector, fieldType: VarType) => boolean
+}
+
+/**
+ * Converts StructuredOutput Type to VarType for compatibility checking
+ */
+const structTypeToVarType = (type: Type): VarType => {
+  const mapping: Record<Type, VarType> = {
+    [Type.string]: VarType.string,
+    [Type.number]: VarType.number,
+    [Type.boolean]: VarType.boolean,
+    [Type.object]: VarType.object,
+    [Type.array]: VarType.array,
+  }
+  return mapping[type] || VarType.any
 }
 
 export const PickerPanelMain: FC<Props> = ({
@@ -23,18 +46,15 @@ export const PickerPanelMain: FC<Props> = ({
   readonly,
   onHovering,
   onSelect,
+  filterNestedPath,
 }) => {
   const ref = useRef<HTMLDivElement>(null)
   useHover(ref, {
     onChange: (hovering) => {
-      if (hovering) {
+      if (hovering)
         onHovering?.(true)
-      }
-      else {
-        setTimeout(() => {
-          onHovering?.(false)
-        }, 100)
-      }
+      else
+        setTimeout(() => onHovering?.(false), 100)
     },
   })
   const schema = payload.schema
@@ -42,28 +62,38 @@ export const PickerPanelMain: FC<Props> = ({
   return (
     <div className={cn(className)} ref={ref}>
       {/* Root info */}
-      <div className='flex items-center justify-between px-2 py-1'>
-        <div className='flex'>
+      <div className="flex items-center justify-between px-2 py-1">
+        <div className="flex">
           {root.nodeName && (
             <>
-              <div className='system-sm-medium max-w-[100px] truncate text-text-tertiary'>{root.nodeName}</div>
-              <div className='system-sm-medium text-text-tertiary'>.</div>
+              <div className="system-sm-medium max-w-[100px] truncate text-text-tertiary">{root.nodeName}</div>
+              <div className="system-sm-medium text-text-tertiary">.</div>
             </>
           )}
-          <div className='system-sm-medium text-text-secondary'>{root.attrName}</div>
+          <div className="system-sm-medium text-text-secondary">{root.attrName}</div>
         </div>
-        <div className='system-xs-regular ml-2 truncate text-text-tertiary' title={root.attrAlias || 'object'}>{root.attrAlias || 'object'}</div>
+        <div className="system-xs-regular ml-2 truncate text-text-tertiary" title={root.attrAlias || 'object'}>{root.attrAlias || 'object'}</div>
       </div>
-      {fieldNames.map(name => (
-        <Field
-          key={name}
-          name={name}
-          payload={schema.properties[name]}
-          readonly={readonly}
-          valueSelector={[root.nodeId!, root.attrName]}
-          onSelect={onSelect}
-        />
-      ))}
+      {fieldNames.map((name) => {
+        const field = schema.properties[name]
+        const fieldVarType = structTypeToVarType(field.type)
+        const valueSelector = [root.nodeId!, root.attrName, name]
+
+        // Apply filter if provided
+        const isSelectable = !filterNestedPath || filterNestedPath(valueSelector, fieldVarType)
+
+        return (
+          <Field
+            key={name}
+            name={name}
+            payload={field}
+            readonly={readonly || !isSelectable}
+            valueSelector={[root.nodeId!, root.attrName]}
+            onSelect={onSelect}
+            filterNestedPath={filterNestedPath}
+          />
+        )
+      })}
     </div>
   )
 }

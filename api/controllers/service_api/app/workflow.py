@@ -15,6 +15,7 @@ from controllers.service_api.app.error import (
     ProviderNotInitializeError,
     ProviderQuotaExceededError,
 )
+from controllers.service_api.app.nested_variable_utils import validate_workflow_nested_inputs
 from controllers.service_api.wraps import FetchUserArg, WhereisUserArg, validate_app_token
 from controllers.web.error import InvokeRateLimitError as InvokeRateLimitHttpError
 from core.app.apps.base_app_queue_manager import AppQueueManager
@@ -150,12 +151,21 @@ class WorkflowRunApi(Resource):
 
         Runs a workflow with the provided inputs and returns the results.
         Supports both blocking and streaming response modes.
+        Supports nested object values in inputs for complex data structures.
         """
         app_mode = AppMode.value_of(app_model.mode)
         if app_mode != AppMode.WORKFLOW:
             raise NotWorkflowAppError()
 
         args = workflow_run_parser.parse_args()
+
+        # Validate nested variable inputs if present
+        inputs = args.get("inputs", {})
+        try:
+            validate_workflow_nested_inputs(app_model, inputs)
+        except ValueError as e:
+            raise BadRequest(str(e))
+
         external_trace_id = get_external_trace_id(request)
         if external_trace_id:
             args["external_trace_id"] = external_trace_id
@@ -205,12 +215,20 @@ class WorkflowRunByIdApi(Resource):
         """Run specific workflow by ID.
 
         Executes a specific workflow version identified by its ID.
+        Supports nested object values in inputs for complex data structures.
         """
         app_mode = AppMode.value_of(app_model.mode)
         if app_mode != AppMode.WORKFLOW:
             raise NotWorkflowAppError()
 
         args = workflow_run_parser.parse_args()
+
+        # Validate nested variable inputs if present
+        inputs = args.get("inputs", {})
+        try:
+            validate_workflow_nested_inputs(app_model, inputs, workflow_id)
+        except ValueError as e:
+            raise BadRequest(str(e))
 
         # Add workflow_id to args for AppGenerateService
         args["workflow_id"] = workflow_id
