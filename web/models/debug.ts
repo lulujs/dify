@@ -62,6 +62,19 @@ export type PromptVariable = {
   icon_background?: string
   hide?: boolean // used in frontend to hide variable
   json_schema?: string
+  children?: PromptVariableChild[] // for nested variable support (object/array[object] types)
+}
+
+/**
+ * Child variable definition for nested variable support in PromptVariable.
+ */
+export type PromptVariableChild = {
+  variable: string
+  type: string
+  required: boolean
+  description?: string
+  default?: unknown
+  children?: PromptVariableChild[]
 }
 
 export type CompletionParams = {

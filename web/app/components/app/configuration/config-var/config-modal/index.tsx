@@ -23,10 +23,9 @@ import { DEFAULT_VALUE_MAX_LEN } from '@/config'
 import type { Item as SelectItem } from './type-select'
 import TypeSelector from './type-select'
 import { SimpleSelect } from '@/app/components/base/select'
-import { useStore as useAppStore } from '@/app/components/app/store'
 import Textarea from '@/app/components/base/textarea'
 import { FileUploaderInAttachmentWrapper } from '@/app/components/base/file-uploader'
-import { AppModeEnum, TransferMethod } from '@/types/app'
+import { TransferMethod } from '@/types/app'
 import type { FileEntity } from '@/app/components/base/file-uploader/types'
 import NestedVariableEditor from '@/app/components/workflow/nodes/_base/components/nested-variable-editor'
 import JsonEditModal from '@/app/components/workflow/nodes/_base/components/nested-variable-editor/json-import-modal'
@@ -70,8 +69,6 @@ const ConfigModal: FC<IConfigModalProps> = ({
   const [tempPayload, setTempPayload] = useState<InputVar>(() => payload || getNewVarInWorkflow('') as any)
   const { type, label, variable, options, max_length } = tempPayload
   const modalRef = useRef<HTMLDivElement>(null)
-  const appDetail = useAppStore(state => state.appDetail)
-  const isBasicApp = appDetail?.mode !== AppModeEnum.ADVANCED_CHAT && appDetail?.mode !== AppModeEnum.WORKFLOW
   const isSupportJSON = true // Enable JSON object type for nested variable support
   const [showJsonEditModal, setShowJsonEditModal] = useState(false)
   useEffect(() => {
@@ -143,7 +140,7 @@ const ConfigModal: FC<IConfigModalProps> = ({
         value: InputVarType.multiFiles,
       },
     ] : []),
-    ...((!isBasicApp && isSupportJSON) ? [
+    ...(isSupportJSON ? [
       {
         name: t('appDebug.variableConfig.json'),
         value: InputVarType.jsonObject,

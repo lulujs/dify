@@ -33,6 +33,19 @@ export const userInputsFormToPromptVariables = (useInputs: UserInputFormItem[] |
       if (item.json_object)
         return ['json_object', item.json_object]
 
+      // Handle array types
+      if (item['array[string]'])
+        return ['array[string]', item['array[string]']]
+
+      if (item['array[number]'])
+        return ['array[number]', item['array[number]']]
+
+      if (item['array[boolean]'])
+        return ['array[boolean]', item['array[boolean]']]
+
+      if (item['array[object]'])
+        return ['array[object]', item['array[object]']]
+
       return ['select', item.select || {}]
     })()
     const is_context_var = dataset_query_variable === content?.variable
@@ -128,6 +141,8 @@ export const userInputsFormToPromptVariables = (useInputs: UserInputFormItem[] |
         icon_background: content.icon_background,
         is_context_var,
         hide: content.hide,
+        children: content.children,
+        json_schema: content.json_schema,
       })
     }
   })
@@ -172,6 +187,22 @@ export const promptVariablesToUserInputsForm = (promptVariables: PromptVariable[
           options: item.options,
           default: item.default ?? '',
           hide: item.hide,
+        },
+      } as any)
+    }
+    else if (item.type === 'json_object' || item.type === 'array[string]' || item.type === 'array[number]' || item.type === 'array[boolean]' || item.type === 'array[object]') {
+      // Handle JSON object and array types with children support
+      // Use the actual type as the key to match backend expectations
+      userInputs.push({
+        [item.type]: {
+          label: item.name,
+          variable: item.key,
+          required: item.required !== false,
+          type: item.type,
+          hide: item.hide,
+          default: item.default,
+          children: item.children,
+          json_schema: item.json_schema,
         },
       } as any)
     }

@@ -215,7 +215,20 @@ const ConfigVar: FC<IConfigVarProps> = ({ promptVariables, readonly, onPromptVar
   const handleConfig = ({ key, type, index, name, config, icon, icon_background }: ExternalDataToolParams) => {
     // setCurrKey(key)
     setCurrIndex(index)
-    if (type !== 'string' && type !== 'paragraph' && type !== 'select' && type !== 'number' && type !== 'checkbox') {
+    // These types should open the edit modal, others open external data tool modal
+    const editableTypes = [
+      'string',
+      'paragraph',
+      'select',
+      'number',
+      'checkbox',
+      InputVarType.jsonObject,
+      InputVarType.arrayString,
+      InputVarType.arrayNumber,
+      InputVarType.arrayBoolean,
+      InputVarType.arrayObject,
+    ]
+    if (!editableTypes.includes(type)) {
       handleOpenExternalDataToolModal({ key, type, index, name, config, icon, icon_background }, promptVariables)
       return
     }

@@ -11,6 +11,11 @@ _ALLOWED_VARIABLE_ENTITY_TYPE = frozenset(
         VariableEntityType.NUMBER,
         VariableEntityType.EXTERNAL_DATA_TOOL,
         VariableEntityType.CHECKBOX,
+        VariableEntityType.JSON_OBJECT,
+        VariableEntityType.ARRAY_STRING,
+        VariableEntityType.ARRAY_NUMBER,
+        VariableEntityType.ARRAY_BOOLEAN,
+        VariableEntityType.ARRAY_OBJECT,
     ]
 )
 
@@ -59,6 +64,11 @@ class BasicVariablesConfigManager:
                 VariableEntityType.NUMBER,
                 VariableEntityType.SELECT,
                 VariableEntityType.CHECKBOX,
+                VariableEntityType.JSON_OBJECT,
+                VariableEntityType.ARRAY_STRING,
+                VariableEntityType.ARRAY_NUMBER,
+                VariableEntityType.ARRAY_BOOLEAN,
+                VariableEntityType.ARRAY_OBJECT,
             }:
                 variable = variables[variable_type]
                 variable_entities.append(
@@ -116,6 +126,11 @@ class BasicVariablesConfigManager:
                 VariableEntityType.NUMBER,
                 VariableEntityType.EXTERNAL_DATA_TOOL,
                 VariableEntityType.CHECKBOX,
+                VariableEntityType.JSON_OBJECT,
+                VariableEntityType.ARRAY_STRING,
+                VariableEntityType.ARRAY_NUMBER,
+                VariableEntityType.ARRAY_BOOLEAN,
+                VariableEntityType.ARRAY_OBJECT,
             }:
                 allowed_keys = ", ".join(i.value for i in _ALLOWED_VARIABLE_ENTITY_TYPE)
                 raise ValueError(f"Keys in user_input_form list can only be {allowed_keys}")
