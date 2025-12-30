@@ -213,7 +213,7 @@ const FormItem: FC<Props> = ({
             />
           )
         }
-        {type === InputVarType.jsonObject && payload.children && payload.children.length > 0 && (
+        {type === InputVarType.object && payload.children && payload.children.length > 0 && (
           <div className='rounded-lg border border-components-panel-border bg-components-panel-bg p-3'>
             <NestedObjectInput
               definition={payload.children}
@@ -222,7 +222,7 @@ const FormItem: FC<Props> = ({
             />
           </div>
         )}
-        {type === InputVarType.jsonObject && (!payload.children || payload.children.length === 0) && (
+        {type === InputVarType.object && (!payload.children || payload.children.length === 0) && (
           <CodeEditor
             value={value}
             language={CodeLanguage.json}

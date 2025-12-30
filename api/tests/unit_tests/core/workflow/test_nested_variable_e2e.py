@@ -1459,16 +1459,16 @@ class TestFrontendTypeMapping:
         """
         Test that frontend variable types are correctly mapped to NestedVariableType values.
 
-        Frontend uses different type names (json_object, text-input, etc.) that need
-        to be converted to NestedVariableType values (object, string, etc.) for validation.
+        Frontend uses different type names (text-input, etc.) that need
+        to be converted to NestedVariableType values (string, etc.) for validation.
         """
         from controllers.console.app.nested_variable_utils import _convert_to_nested_definition_format
 
-        # Test json_object -> object mapping
+        # Test object type (frontend now sends 'object' directly)
         frontend_var = {
             "variable": "user_data",
             "label": "User Data",
-            "type": "json_object",
+            "type": "object",
             "required": True,
             "children": [
                 {
@@ -1490,7 +1490,7 @@ class TestFrontendTypeMapping:
 
         # Verify type mappings
         assert converted["name"] == "user_data"
-        assert converted["type"] == "object"  # json_object -> object
+        assert converted["type"] == "object"  # object stays object
         assert converted["required"] is True
 
         # Verify children type mappings
@@ -1504,12 +1504,12 @@ class TestFrontendTypeMapping:
         """
         Test that validate_graph_nested_variables correctly handles frontend types.
 
-        This simulates the actual API request where frontend sends json_object
+        This simulates the actual API request where frontend sends object
         and text-input types that need to be validated.
         """
         from controllers.console.app.nested_variable_utils import validate_graph_nested_variables
 
-        # Simulate a workflow graph from frontend with json_object type
+        # Simulate a workflow graph from frontend with object type
         graph = {
             "nodes": [
                 {
@@ -1521,7 +1521,7 @@ class TestFrontendTypeMapping:
                             {
                                 "variable": "a",
                                 "label": "a",
-                                "type": "json_object",
+                                "type": "object",
                                 "required": True,
                                 "description": "",
                                 "children": [
@@ -1551,7 +1551,6 @@ class TestFrontendTypeMapping:
         from controllers.console.app.nested_variable_utils import _convert_to_nested_definition_format
 
         type_mappings = [
-            ("json_object", "object"),
             ("text-input", "string"),
             ("paragraph", "string"),
             ("select", "string"),
@@ -1577,9 +1576,9 @@ class TestFrontendTypeMapping:
 class TestDSLImportWithNestedVariables:
     """Tests for importing DSL with nested variables - reproducing real-world issues."""
 
-    def test_import_dsl_with_json_object_nested_variable(self):
+    def test_import_dsl_with_object_nested_variable(self):
         """
-        Test importing a DSL with json_object type nested variable.
+        Test importing a DSL with object type nested variable.
 
         This reproduces the exact structure from the user's DSL that was causing 500 errors.
         """
@@ -1603,7 +1602,7 @@ class TestDSLImportWithNestedVariables:
             "options": [],
             "placeholder": "",
             "required": True,
-            "type": "json_object",
+            "type": "object",
             "variable": "a",
         }
 
@@ -1611,7 +1610,7 @@ class TestDSLImportWithNestedVariables:
         variable = VariableEntity.model_validate(dsl_variable)
 
         assert variable.variable == "a"
-        assert variable.type == VariableEntityType.JSON_OBJECT
+        assert variable.type == VariableEntityType.OBJECT
         assert variable.children is not None
         assert len(variable.children) == 1
         assert variable.children[0].variable == "var_1766974683066"
@@ -1667,7 +1666,7 @@ class TestDSLImportWithNestedVariables:
                     "options": [],
                     "placeholder": "",
                     "required": True,
-                    "type": "json_object",
+                    "type": "object",
                     "variable": "a",
                 }
             ],
@@ -1714,7 +1713,7 @@ class TestDSLImportWithNestedVariables:
                                 "options": [],
                                 "placeholder": "",
                                 "required": True,
-                                "type": "json_object",
+                                "type": "object",
                                 "variable": "a",
                             }
                         ],
@@ -1731,20 +1730,20 @@ class TestDSLImportWithNestedVariables:
 class TestBaseAppGeneratorNestedVariables:
     """Tests for BaseAppGenerator handling of nested variable types."""
 
-    def test_validate_inputs_with_json_object_type(self):
+    def test_validate_inputs_with_object_type(self):
         """
-        Test that _validate_inputs correctly handles json_object type.
+        Test that _validate_inputs correctly handles object type.
         """
         from core.app.app_config.entities import VariableEntity, VariableEntityType
         from core.app.apps.base_app_generator import BaseAppGenerator
 
         generator = BaseAppGenerator()
 
-        # Create a json_object variable entity
+        # Create an object variable entity
         variable_entity = VariableEntity(
             variable="user_data",
             label="User Data",
-            type=VariableEntityType.JSON_OBJECT,
+            type=VariableEntityType.OBJECT,
             required=True,
         )
 
@@ -1753,7 +1752,7 @@ class TestBaseAppGeneratorNestedVariables:
         result = generator._validate_inputs(variable_entity=variable_entity, value=value)
         assert result == value
 
-    def test_validate_inputs_with_object_type(self):
+    def test_validate_inputs_with_object_type_config(self):
         """
         Test that _validate_inputs correctly handles object type.
         """
@@ -1805,7 +1804,7 @@ class TestBaseAppGeneratorNestedVariables:
         variable_entity = VariableEntity(
             variable="user_data",
             label="User Data",
-            type=VariableEntityType.JSON_OBJECT,
+            type=VariableEntityType.OBJECT,
             required=True,
         )
 
@@ -1846,7 +1845,7 @@ class TestBaseAppGeneratorNestedVariables:
             VariableEntity(
                 variable="user_data",
                 label="User Data",
-                type=VariableEntityType.JSON_OBJECT,
+                type=VariableEntityType.OBJECT,
                 required=True,
             ),
             VariableEntity(
@@ -1886,7 +1885,7 @@ class TestBaseAppGeneratorNestedVariables:
             VariableEntity(
                 variable="a",
                 label="a",
-                type=VariableEntityType.JSON_OBJECT,
+                type=VariableEntityType.OBJECT,
                 required=True,
                 max_length=48,
                 children=[

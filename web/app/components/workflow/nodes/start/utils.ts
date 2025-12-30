@@ -19,7 +19,7 @@ const inputVarTypeToNestedType: Partial<Record<InputVarType, NestedVariableType>
   [InputVarType.checkbox]: NestedVariableType.BOOLEAN,
   [InputVarType.singleFile]: NestedVariableType.FILE,
   [InputVarType.multiFiles]: NestedVariableType.ARRAY_FILE,
-  [InputVarType.jsonObject]: NestedVariableType.OBJECT,
+  [InputVarType.object]: NestedVariableType.OBJECT,
 }
 
 /**
@@ -31,13 +31,13 @@ const nestedTypeToInputVarType: Partial<Record<NestedVariableType, InputVarType>
   [NestedVariableType.NUMBER]: InputVarType.number,
   [NestedVariableType.BOOLEAN]: InputVarType.checkbox,
   [NestedVariableType.FILE]: InputVarType.singleFile,
-  [NestedVariableType.OBJECT]: InputVarType.jsonObject,
+  [NestedVariableType.OBJECT]: InputVarType.object,
   [NestedVariableType.ARRAY_STRING]: InputVarType.textInput,
   [NestedVariableType.ARRAY_INTEGER]: InputVarType.number,
   [NestedVariableType.ARRAY_NUMBER]: InputVarType.number,
   [NestedVariableType.ARRAY_BOOLEAN]: InputVarType.checkbox,
   [NestedVariableType.ARRAY_FILE]: InputVarType.multiFiles,
-  [NestedVariableType.ARRAY_OBJECT]: InputVarType.jsonObject,
+  [NestedVariableType.ARRAY_OBJECT]: InputVarType.object,
 }
 
 /**

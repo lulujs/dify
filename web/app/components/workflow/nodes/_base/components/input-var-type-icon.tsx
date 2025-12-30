@@ -26,7 +26,7 @@ const getIcon = (type: InputVarType) => {
     [InputVarType.select]: RiCheckboxMultipleLine,
     [InputVarType.number]: RiHashtag,
     [InputVarType.checkbox]: RiCheckboxLine,
-    [InputVarType.jsonObject]: RiBracesLine,
+    [InputVarType.object]: RiBracesLine,
     [InputVarType.singleFile]: RiFileList2Line,
     [InputVarType.multiFiles]: RiFileCopy2Line,
     [InputVarType.arrayString]: RiBracketsLine,

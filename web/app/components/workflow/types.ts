@@ -196,7 +196,7 @@ export enum InputVarType {
   url = 'url',
   files = 'files',
   json = 'json', // obj, array
-  jsonObject = 'json_object', // only object support define json schema
+  object = 'object', // object type, supports nested children with json schema
   contexts = 'contexts', // knowledge retrieval
   iterator = 'iterator', // iteration input
   singleFile = 'file',
@@ -228,13 +228,13 @@ export type InputVar = {
   getVarValueFromDependent?: boolean
   hide?: boolean
   isFileItem?: boolean
-  json_schema?: string // for jsonObject type
+  json_schema?: string // for object type
   children?: InputVarChild[] // for nested variable support (object/array[object] types)
 } & Partial<UploadFileSetting>
 
 /**
  * Child variable definition for nested variable support.
- * Used when InputVarType is jsonObject to define the structure of nested objects.
+ * Used when InputVarType is object to define the structure of nested objects.
  */
 export type InputVarChild = {
   /** Variable name - must start with letter, contain only alphanumeric and underscore */

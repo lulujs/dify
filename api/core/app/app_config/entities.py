@@ -101,7 +101,6 @@ class VariableEntityType(StrEnum):
     # Nested variable types
     OBJECT = "object"
     ARRAY_OBJECT = "array[object]"
-    JSON_OBJECT = "json_object"
     # Array types for type validation
     ARRAY_STRING = "array[string]"
     ARRAY_NUMBER = "array[number]"
@@ -109,7 +108,7 @@ class VariableEntityType(StrEnum):
 
     def is_nestable(self) -> bool:
         """Check if this type supports child variables."""
-        return self in (VariableEntityType.OBJECT, VariableEntityType.ARRAY_OBJECT, VariableEntityType.JSON_OBJECT)
+        return self in (VariableEntityType.OBJECT, VariableEntityType.ARRAY_OBJECT)
 
 
 class VariableEntity(BaseModel):

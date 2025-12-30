@@ -167,7 +167,7 @@ const InputsFormContent = ({ showTip }: Props) => {
             />
           )}
           {/* JSON Object type with children - nested object input */}
-          {form.type === InputVarType.jsonObject && form.children && form.children.length > 0 && (
+          {form.type === InputVarType.object && form.children && form.children.length > 0 && (
             <div className='rounded-lg border border-components-panel-border bg-components-panel-bg p-3'>
               <NestedObjectInput
                 definition={convertToInputVarChild(form.children)}
@@ -177,7 +177,7 @@ const InputsFormContent = ({ showTip }: Props) => {
             </div>
           )}
           {/* JSON Object type without children - JSON editor */}
-          {form.type === InputVarType.jsonObject && (!form.children || form.children.length === 0) && (
+          {form.type === InputVarType.object && (!form.children || form.children.length === 0) && (
             <CodeEditor
               language={CodeLanguage.json}
               value={inputsFormValue?.[form.variable] || ''}

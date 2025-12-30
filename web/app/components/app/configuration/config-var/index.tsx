@@ -222,7 +222,7 @@ const ConfigVar: FC<IConfigVarProps> = ({ promptVariables, readonly, onPromptVar
       'select',
       'number',
       'checkbox',
-      InputVarType.jsonObject,
+      InputVarType.object,
       InputVarType.arrayString,
       InputVarType.arrayNumber,
       InputVarType.arrayBoolean,

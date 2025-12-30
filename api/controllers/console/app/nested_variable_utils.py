@@ -209,7 +209,6 @@ def _convert_to_nested_definition_format(var: dict[str, Any]) -> dict[str, Any]:
     # Map frontend types to NestedVariableType values
     type_mapping = {
         # Frontend types -> NestedVariableType values
-        "json_object": "object",
         "text-input": "string",
         "paragraph": "string",
         "select": "string",
@@ -286,8 +285,7 @@ def is_nested_variable_type(type_str: str) -> bool:
     except ValueError:
         pass
 
-    # Also check for json_object which is used by frontend
-    return type_str in ("object", "array[object]", "json_object")
+    return type_str in ("object", "array[object]")
 
 
 def get_max_nesting_depth() -> int:

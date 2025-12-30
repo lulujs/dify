@@ -232,7 +232,7 @@ const PromptValuePanel: FC<IPromptValuePanelProps> = ({
                       />
                     )}
                     {/* JSON Object type with children - nested object input */}
-                    {type === InputVarType.jsonObject && children && children.length > 0 && (
+                    {type === InputVarType.object && children && children.length > 0 && (
                       <div className='rounded-lg border border-components-panel-border bg-components-panel-bg p-3'>
                         <NestedObjectInput
                           definition={convertToInputVarChild(children)}
@@ -242,7 +242,7 @@ const PromptValuePanel: FC<IPromptValuePanelProps> = ({
                       </div>
                     )}
                     {/* JSON Object type without children - JSON editor */}
-                    {type === InputVarType.jsonObject && (!children || children.length === 0) && (
+                    {type === InputVarType.object && (!children || children.length === 0) && (
                       <CodeEditor
                         value={typeof inputs[key] === 'string' ? inputs[key] : (typeof inputs[key] === 'object' ? inputs[key] : '')}
                         language={CodeLanguage.json}

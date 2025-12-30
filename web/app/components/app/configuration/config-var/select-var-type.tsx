@@ -66,7 +66,7 @@ const SelectVarType: FC<Props> = ({
             <SelectItem type={InputVarType.select} value='select' text={t('appDebug.variableConfig.select')} onClick={handleChange}></SelectItem>
             <SelectItem type={InputVarType.number} value='number' text={t('appDebug.variableConfig.number')} onClick={handleChange}></SelectItem>
             <SelectItem type={InputVarType.checkbox} value='checkbox' text={t('appDebug.variableConfig.checkbox')} onClick={handleChange}></SelectItem>
-            <SelectItem type={InputVarType.jsonObject} value={InputVarType.jsonObject} text={t('appDebug.variableConfig.json')} onClick={handleChange}></SelectItem>
+            <SelectItem type={InputVarType.object} value={InputVarType.object} text={t('appDebug.variableConfig.json')} onClick={handleChange}></SelectItem>
             <SelectItem type={InputVarType.arrayString} value={InputVarType.arrayString} text={t('appDebug.variableConfig.arrayString') || 'Array[String]'} onClick={handleChange}></SelectItem>
             <SelectItem type={InputVarType.arrayNumber} value={InputVarType.arrayNumber} text={t('appDebug.variableConfig.arrayNumber') || 'Array[Number]'} onClick={handleChange}></SelectItem>
             <SelectItem type={InputVarType.arrayBoolean} value={InputVarType.arrayBoolean} text={t('appDebug.variableConfig.arrayBoolean') || 'Array[Boolean]'} onClick={handleChange}></SelectItem>

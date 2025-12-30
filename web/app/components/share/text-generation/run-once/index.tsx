@@ -89,7 +89,7 @@ const RunOnce: FC<IRunOnceProps> = ({
         newInputs[item.key] = [false]
       else if (item.type === InputVarType.arrayObject)
         newInputs[item.key] = [{}]
-      else if (item.type === InputVarType.jsonObject)
+      else if (item.type === InputVarType.object)
         newInputs[item.key] = {}
       else
         newInputs[item.key] = undefined
@@ -166,7 +166,7 @@ const RunOnce: FC<IRunOnceProps> = ({
         newInputs[item.key] = [false]
       else if (item.type === InputVarType.arrayObject)
         newInputs[item.key] = [{}]
-      else if (item.type === InputVarType.jsonObject)
+      else if (item.type === InputVarType.object)
         newInputs[item.key] = {}
       else
         newInputs[item.key] = undefined
@@ -253,7 +253,7 @@ const RunOnce: FC<IRunOnceProps> = ({
                     />
                   )}
                   {/* JSON Object type with children - nested object input */}
-                  {item.type === InputVarType.jsonObject && item.children && item.children.length > 0 && (
+                  {item.type === InputVarType.object && item.children && item.children.length > 0 && (
                     <div className='rounded-lg border border-components-panel-border bg-components-panel-bg p-3'>
                       <NestedObjectInput
                         definition={convertToInputVarChild(item.children)}
@@ -263,7 +263,7 @@ const RunOnce: FC<IRunOnceProps> = ({
                     </div>
                   )}
                   {/* JSON Object type without children - JSON editor */}
-                  {item.type === InputVarType.jsonObject && (!item.children || item.children.length === 0) && (
+                  {item.type === InputVarType.object && (!item.children || item.children.length === 0) && (
                     <CodeEditor
                       language={CodeLanguage.json}
                       value={inputs[item.key]}

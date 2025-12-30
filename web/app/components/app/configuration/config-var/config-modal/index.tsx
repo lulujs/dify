@@ -143,7 +143,7 @@ const ConfigModal: FC<IConfigModalProps> = ({
     ...(isSupportJSON ? [
       {
         name: t('appDebug.variableConfig.json'),
-        value: InputVarType.jsonObject,
+        value: InputVarType.object,
       },
       {
         name: t('appDebug.variableConfig.arrayString') || 'Array[String]',
@@ -411,7 +411,7 @@ const ConfigModal: FC<IConfigModalProps> = ({
           )}
 
           {/* Nested Variable Editor for jsonObject and arrayObject types */}
-          {(type === InputVarType.jsonObject || type === InputVarType.arrayObject) && (
+          {(type === InputVarType.object || type === InputVarType.arrayObject) && (
             <>
               <Field
                 title={t('workflow.nestedVariable.childVariables') || 'Child Variables'}

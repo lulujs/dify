@@ -67,7 +67,7 @@ const NestedObjectInput: FC<Props> = ({
     const fieldValue = value?.[child.variable]
     const isExpanded = expandedFields.has(child.variable)
     const hasChildren = child.children && child.children.length > 0
-    const isObjectType = child.type === InputVarType.jsonObject
+    const isObjectType = child.type === InputVarType.object
 
     return (
       <div key={child.variable} className={cn('mb-2 last:mb-0', depth > 0 && 'ml-4')}>
@@ -196,7 +196,7 @@ function getTypeLabel(type: InputVarType): string {
     [InputVarType.paragraph]: 'string',
     [InputVarType.number]: 'number',
     [InputVarType.checkbox]: 'boolean',
-    [InputVarType.jsonObject]: 'object',
+    [InputVarType.object]: 'object',
     [InputVarType.singleFile]: 'file',
     [InputVarType.multiFiles]: 'files',
   }

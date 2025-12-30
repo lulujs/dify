@@ -75,7 +75,7 @@ class BaseAppGenerator:
         user_inputs = {**user_inputs, **files_inputs, **file_list_inputs}
 
         # Check if all files are converted to File (but allow dict values for nested object types)
-        nestable_types = {VariableEntityType.OBJECT, VariableEntityType.ARRAY_OBJECT, VariableEntityType.JSON_OBJECT}
+        nestable_types = {VariableEntityType.OBJECT, VariableEntityType.ARRAY_OBJECT}
         for k, v in user_inputs.items():
             if isinstance(v, dict):
                 # Allow dict values for nested object types, but not for FILE type (should be converted to File)
@@ -171,7 +171,7 @@ class BaseAppGenerator:
                         value = True
                     elif value == 0:
                         value = False
-            case VariableEntityType.OBJECT | VariableEntityType.ARRAY_OBJECT | VariableEntityType.JSON_OBJECT:
+            case VariableEntityType.OBJECT | VariableEntityType.ARRAY_OBJECT:
                 # Nested variable types - validate that value is dict or list of dicts
                 if variable_entity.type == VariableEntityType.ARRAY_OBJECT:
                     if not isinstance(value, list):
