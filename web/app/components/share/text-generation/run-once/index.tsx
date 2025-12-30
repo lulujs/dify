@@ -3,12 +3,14 @@ import { useEffect, useState } from 'react'
 import React, { useCallback } from 'react'
 import { useTranslation } from 'react-i18next'
 import {
+  RiDeleteBinLine,
   RiLoader2Line,
   RiPlayLargeLine,
 } from '@remixicon/react'
+import { produce } from 'immer'
 import Select from '@/app/components/base/select'
 import type { SiteInfo } from '@/models/share'
-import type { PromptConfig } from '@/models/debug'
+import type { PromptConfig, PromptVariableChild } from '@/models/debug'
 import Button from '@/app/components/base/button'
 import Textarea from '@/app/components/base/textarea'
 import Input from '@/app/components/base/input'
@@ -19,9 +21,29 @@ import { FileUploaderInAttachmentWrapper } from '@/app/components/base/file-uplo
 import useBreakpoints, { MediaType } from '@/hooks/use-breakpoints'
 import cn from '@/utils/classnames'
 import BoolInput from '@/app/components/workflow/nodes/_base/components/before-run-form/bool-input'
+import NestedObjectInput from '@/app/components/workflow/nodes/_base/components/before-run-form/nested-object-input'
 import CodeEditor from '@/app/components/workflow/nodes/_base/components/editor/code-editor'
 import { CodeLanguage } from '@/app/components/workflow/nodes/code/types'
 import { StopCircle } from '@/app/components/base/icons/src/vender/solid/mediaAndDevices'
+import type { InputVarChild } from '@/app/components/workflow/types'
+import { InputVarType } from '@/app/components/workflow/types'
+
+/**
+ * Converts PromptVariableChild to InputVarChild for NestedObjectInput compatibility
+ */
+const convertToInputVarChild = (children: PromptVariableChild[] | undefined): InputVarChild[] => {
+  if (!children || children.length === 0)
+    return []
+
+  return children.map((child): InputVarChild => ({
+    variable: child.variable,
+    type: child.type as InputVarType,
+    required: child.required,
+    description: child.description,
+    default: child.default,
+    children: convertToInputVarChild(child.children),
+  }))
+}
 
 export type IRunOnceProps = {
   siteInfo: SiteInfo
@@ -59,6 +81,16 @@ const RunOnce: FC<IRunOnceProps> = ({
         newInputs[item.key] = ''
       else if (item.type === 'checkbox')
         newInputs[item.key] = false
+      else if (item.type === InputVarType.arrayString)
+        newInputs[item.key] = ['']
+      else if (item.type === InputVarType.arrayNumber)
+        newInputs[item.key] = [0]
+      else if (item.type === InputVarType.arrayBoolean)
+        newInputs[item.key] = [false]
+      else if (item.type === InputVarType.arrayObject)
+        newInputs[item.key] = [{}]
+      else if (item.type === InputVarType.jsonObject)
+        newInputs[item.key] = {}
       else
         newInputs[item.key] = undefined
     })
@@ -83,6 +115,33 @@ const RunOnce: FC<IRunOnceProps> = ({
     inputsRef.current = newInputs
   }, [onInputsChange, inputsRef])
 
+  // Array item change handler for array types
+  const handleArrayItemChange = useCallback((key: string, index: number, newValue: any) => {
+    const currentValue = Array.isArray(inputs[key]) ? inputs[key] : []
+    const newValues = produce(currentValue as any[], (draft) => {
+      while (draft.length <= index)
+        draft.push(undefined)
+      draft[index] = newValue
+    })
+    handleInputsChange({ ...inputsRef.current, [key]: newValues })
+  }, [inputs, handleInputsChange, inputsRef])
+
+  // Array item remove handler for array types
+  const handleArrayItemRemove = useCallback((key: string, index: number) => {
+    const currentValue = Array.isArray(inputs[key]) ? inputs[key] : []
+    const newValues = produce(currentValue as any[], (draft) => {
+      if (index < draft.length)
+        draft.splice(index, 1)
+    })
+    handleInputsChange({ ...inputsRef.current, [key]: newValues })
+  }, [inputs, handleInputsChange, inputsRef])
+
+  // Add new item to array
+  const handleArrayItemAdd = useCallback((key: string, defaultValue: any) => {
+    const currentValue = Array.isArray(inputs[key]) ? inputs[key] : []
+    handleInputsChange({ ...inputsRef.current, [key]: [...currentValue, defaultValue] })
+  }, [inputs, handleInputsChange, inputsRef])
+
   useEffect(() => {
     if (isInitialized) return
     const newInputs: Record<string, any> = {}
@@ -99,6 +158,16 @@ const RunOnce: FC<IRunOnceProps> = ({
         newInputs[item.key] = undefined
       else if (item.type === 'file-list')
         newInputs[item.key] = []
+      else if (item.type === InputVarType.arrayString)
+        newInputs[item.key] = ['']
+      else if (item.type === InputVarType.arrayNumber)
+        newInputs[item.key] = [0]
+      else if (item.type === InputVarType.arrayBoolean)
+        newInputs[item.key] = [false]
+      else if (item.type === InputVarType.arrayObject)
+        newInputs[item.key] = [{}]
+      else if (item.type === InputVarType.jsonObject)
+        newInputs[item.key] = {}
       else
         newInputs[item.key] = undefined
     })
@@ -183,15 +252,156 @@ const RunOnce: FC<IRunOnceProps> = ({
                       }}
                     />
                   )}
-                  {item.type === 'json_object' && (
+                  {/* JSON Object type with children - nested object input */}
+                  {item.type === InputVarType.jsonObject && item.children && item.children.length > 0 && (
+                    <div className='rounded-lg border border-components-panel-border bg-components-panel-bg p-3'>
+                      <NestedObjectInput
+                        definition={convertToInputVarChild(item.children)}
+                        value={typeof inputs[item.key] === 'object' && inputs[item.key] !== null ? inputs[item.key] as Record<string, unknown> : {}}
+                        onChange={(value) => { handleInputsChange({ ...inputsRef.current, [item.key]: value }) }}
+                      />
+                    </div>
+                  )}
+                  {/* JSON Object type without children - JSON editor */}
+                  {item.type === InputVarType.jsonObject && (!item.children || item.children.length === 0) && (
                     <CodeEditor
                       language={CodeLanguage.json}
                       value={inputs[item.key]}
                       onChange={(value) => { handleInputsChange({ ...inputsRef.current, [item.key]: value }) }}
                       noWrapper
-                      className='bg h-[80px] overflow-y-auto rounded-[10px] bg-components-input-bg-normal p-1'
+                      className='h-[80px] overflow-y-auto rounded-[10px] bg-components-input-bg-normal p-1'
                       placeholder={
                         <div className='whitespace-pre'>{item.json_schema}</div>
+                      }
+                    />
+                  )}
+                  {/* Array[String] type - list of text inputs */}
+                  {item.type === InputVarType.arrayString && (
+                    <div className='space-y-2'>
+                      {((inputs[item.key] as string[]) || ['']).map((arrayItem: string, idx: number) => (
+                        <div key={idx} className='flex items-center gap-2'>
+                          <Input
+                            value={arrayItem || ''}
+                            onChange={e => handleArrayItemChange(item.key, idx, e.target.value)}
+                            placeholder={`${t('appDebug.variableConfig.content')} ${idx + 1}`}
+                            className='flex-1'
+                          />
+                          {((inputs[item.key] as string[]) || []).length > 1 && (
+                            <RiDeleteBinLine
+                              onClick={() => handleArrayItemRemove(item.key, idx)}
+                              className='h-4 w-4 shrink-0 cursor-pointer text-text-tertiary hover:text-text-secondary'
+                            />
+                          )}
+                        </div>
+                      ))}
+                      <button
+                        type='button'
+                        onClick={() => handleArrayItemAdd(item.key, '')}
+                        className='system-xs-medium text-text-accent hover:text-text-accent-secondary'
+                      >
+                        + {t('appDebug.variableConfig.addOption')}
+                      </button>
+                    </div>
+                  )}
+                  {/* Array[Number] type - list of number inputs */}
+                  {item.type === InputVarType.arrayNumber && (
+                    <div className='space-y-2'>
+                      {((inputs[item.key] as number[]) || [0]).map((arrayItem: number, idx: number) => (
+                        <div key={idx} className='flex items-center gap-2'>
+                          <Input
+                            type='number'
+                            value={arrayItem ?? ''}
+                            onChange={e => handleArrayItemChange(item.key, idx, e.target.value ? Number(e.target.value) : 0)}
+                            placeholder={`${t('appDebug.variableConfig.content')} ${idx + 1}`}
+                            className='flex-1'
+                          />
+                          {((inputs[item.key] as number[]) || []).length > 1 && (
+                            <RiDeleteBinLine
+                              onClick={() => handleArrayItemRemove(item.key, idx)}
+                              className='h-4 w-4 shrink-0 cursor-pointer text-text-tertiary hover:text-text-secondary'
+                            />
+                          )}
+                        </div>
+                      ))}
+                      <button
+                        type='button'
+                        onClick={() => handleArrayItemAdd(item.key, 0)}
+                        className='system-xs-medium text-text-accent hover:text-text-accent-secondary'
+                      >
+                        + {t('appDebug.variableConfig.addOption')}
+                      </button>
+                    </div>
+                  )}
+                  {/* Array[Boolean] type - list of boolean toggles */}
+                  {item.type === InputVarType.arrayBoolean && (
+                    <div className='space-y-2'>
+                      {((inputs[item.key] as boolean[]) || [false]).map((arrayItem: boolean, idx: number) => (
+                        <div key={idx} className='flex items-center gap-2'>
+                          <BoolInput
+                            name={`${item.name || item.key} [${idx + 1}]`}
+                            value={!!arrayItem}
+                            required={false}
+                            onChange={v => handleArrayItemChange(item.key, idx, v)}
+                          />
+                          {((inputs[item.key] as boolean[]) || []).length > 1 && (
+                            <RiDeleteBinLine
+                              onClick={() => handleArrayItemRemove(item.key, idx)}
+                              className='h-4 w-4 shrink-0 cursor-pointer text-text-tertiary hover:text-text-secondary'
+                            />
+                          )}
+                        </div>
+                      ))}
+                      <button
+                        type='button'
+                        onClick={() => handleArrayItemAdd(item.key, false)}
+                        className='system-xs-medium text-text-accent hover:text-text-accent-secondary'
+                      >
+                        + {t('appDebug.variableConfig.addOption')}
+                      </button>
+                    </div>
+                  )}
+                  {/* Array[Object] type with children - list of nested object inputs */}
+                  {item.type === InputVarType.arrayObject && item.children && item.children.length > 0 && (
+                    <div className='space-y-2'>
+                      {((inputs[item.key] as Record<string, unknown>[]) || [{}]).map((arrayItem: Record<string, unknown>, idx: number) => (
+                        <div key={idx} className='rounded-lg border border-components-panel-border bg-components-panel-bg p-3'>
+                          <div className='mb-2 flex items-center justify-between'>
+                            <span className='system-xs-semibold text-text-secondary'>
+                              {t('appDebug.variableConfig.content')} {idx + 1}
+                            </span>
+                            {((inputs[item.key] as Record<string, unknown>[]) || []).length > 1 && (
+                              <RiDeleteBinLine
+                                onClick={() => handleArrayItemRemove(item.key, idx)}
+                                className='h-4 w-4 cursor-pointer text-text-tertiary hover:text-text-secondary'
+                              />
+                            )}
+                          </div>
+                          <NestedObjectInput
+                            definition={convertToInputVarChild(item.children)}
+                            value={typeof arrayItem === 'object' && arrayItem !== null ? arrayItem : {}}
+                            onChange={v => handleArrayItemChange(item.key, idx, v)}
+                          />
+                        </div>
+                      ))}
+                      <button
+                        type='button'
+                        onClick={() => handleArrayItemAdd(item.key, {})}
+                        className='system-xs-medium text-text-accent hover:text-text-accent-secondary'
+                      >
+                        + {t('appDebug.variableConfig.addOption')}
+                      </button>
+                    </div>
+                  )}
+                  {/* Array[Object] type without children - JSON array editor */}
+                  {item.type === InputVarType.arrayObject && (!item.children || item.children.length === 0) && (
+                    <CodeEditor
+                      value={typeof inputs[item.key] === 'string' ? inputs[item.key] : (typeof inputs[item.key] === 'object' ? inputs[item.key] : '')}
+                      language={CodeLanguage.json}
+                      onChange={(value) => { handleInputsChange({ ...inputsRef.current, [item.key]: value }) }}
+                      noWrapper
+                      className='h-[120px] overflow-y-auto rounded-[10px] bg-components-input-bg-normal p-1'
+                      placeholder={
+                        <div className='whitespace-pre'>{'[\n  { }\n]'}</div>
                       }
                     />
                   )}
