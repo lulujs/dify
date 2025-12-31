@@ -1,6 +1,6 @@
 'use client'
 import type { FC } from 'react'
-import React, { useCallback, useMemo } from 'react'
+import React, { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { produce } from 'immer'
 import {
@@ -28,6 +28,8 @@ import BoolInput from './bool-input'
 import NestedObjectInput from './nested-object-input'
 import { useHooksStore } from '@/app/components/workflow/hooks-store'
 
+type InputMode = 'form' | 'json'
+
 type Props = {
   payload: InputVar
   value: any
@@ -48,6 +50,48 @@ const FormItem: FC<Props> = ({
   const { t } = useTranslation()
   const { type } = payload
   const fileSettings = useHooksStore(s => s.configsMap?.fileSettings)
+
+  // Input mode state for complex types
+  const [inputMode, setInputMode] = useState<InputMode>('form')
+
+  // Check if this is a complex type that supports mode switching
+  const isComplexType = useMemo(() => {
+    return [
+      InputVarType.object,
+      InputVarType.arrayObject,
+      InputVarType.arrayString,
+      InputVarType.arrayNumber,
+      InputVarType.arrayBoolean,
+    ].includes(type)
+  }, [type])
+
+  // Check if this complex type has children (for object and arrayObject)
+  const hasChildren = useMemo(() => {
+    if (type === InputVarType.object || type === InputVarType.arrayObject)
+      return payload.children && payload.children.length > 0
+    return true // array types always have "children" (the array items)
+  }, [type, payload.children])
+
+  // Handle JSON input change with validation
+  const handleJsonChange = useCallback((jsonValue: string) => {
+    try {
+      const parsed = JSON.parse(jsonValue)
+      onChange(parsed)
+    }
+    catch {
+      // Keep the raw string if not valid JSON - will be validated on submit
+      onChange(jsonValue)
+    }
+  }, [onChange])
+
+  // Get JSON string representation of value
+  const jsonValue = useMemo(() => {
+    if (typeof value === 'string')
+      return value
+    if (value === undefined || value === null)
+      return ''
+    return JSON.stringify(value, null, 2)
+  }, [value])
 
   const handleArrayItemChange = useCallback((index: number) => {
     return (newValue: any) => {
@@ -130,20 +174,51 @@ const FormItem: FC<Props> = ({
   return (
     <div className={cn(className)}>
       {!isArrayLikeType && !isBooleanType && (
-        <div className='system-sm-semibold mb-1 flex h-6 items-center gap-1 text-text-secondary'>
-          <div className='truncate'>
-            {typeof payload.label === 'object' ? nodeKey : payload.label}
-          </div>
-          {payload.hide === true ? (
-            <span className='system-xs-regular text-text-tertiary'>
-              {t('workflow.panel.optional_and_hidden')}
-            </span>
-          ) : (
-            !payload.required && (
+        <div className='system-sm-semibold mb-1 flex h-6 items-center justify-between text-text-secondary'>
+          <div className='flex items-center gap-1 truncate'>
+            <div className='truncate'>
+              {typeof payload.label === 'object' ? nodeKey : payload.label}
+            </div>
+            {payload.hide === true ? (
               <span className='system-xs-regular text-text-tertiary'>
-                {t('workflow.panel.optional')}
+                {t('workflow.panel.optional_and_hidden')}
               </span>
-            )
+            ) : (
+              !payload.required && (
+                <span className='system-xs-regular text-text-tertiary'>
+                  {t('workflow.panel.optional')}
+                </span>
+              )
+            )}
+          </div>
+          {/* Mode switcher for complex types with children */}
+          {isComplexType && hasChildren && (
+            <div className='flex shrink-0 items-center gap-1'>
+              <button
+                type='button'
+                onClick={() => setInputMode('form')}
+                className={cn(
+                  'system-xs-medium rounded px-1.5 py-0.5 transition-colors',
+                  inputMode === 'form'
+                    ? 'bg-components-button-secondary-bg text-text-secondary'
+                    : 'text-text-tertiary hover:text-text-secondary',
+                )}
+              >
+                {t('workflow.chatVariable.modal.editInForm')}
+              </button>
+              <button
+                type='button'
+                onClick={() => setInputMode('json')}
+                className={cn(
+                  'system-xs-medium rounded px-1.5 py-0.5 transition-colors',
+                  inputMode === 'json'
+                    ? 'bg-components-button-secondary-bg text-text-secondary'
+                    : 'text-text-tertiary hover:text-text-secondary',
+                )}
+              >
+                {t('workflow.chatVariable.modal.editInJSON')}
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -213,7 +288,7 @@ const FormItem: FC<Props> = ({
             />
           )
         }
-        {type === InputVarType.object && payload.children && payload.children.length > 0 && (
+        {type === InputVarType.object && payload.children && payload.children.length > 0 && inputMode === 'form' && (
           <div className='rounded-lg border border-components-panel-border bg-components-panel-bg p-3'>
             <NestedObjectInput
               definition={payload.children}
@@ -221,6 +296,18 @@ const FormItem: FC<Props> = ({
               onChange={onChange}
             />
           </div>
+        )}
+        {type === InputVarType.object && payload.children && payload.children.length > 0 && inputMode === 'json' && (
+          <CodeEditor
+            value={jsonValue}
+            language={CodeLanguage.json}
+            onChange={handleJsonChange}
+            noWrapper
+            className='bg h-[120px] overflow-y-auto rounded-[10px] bg-components-input-bg-normal p-1'
+            placeholder={
+              <div className='whitespace-pre'>{'{ }'}</div>
+            }
+          />
         )}
         {type === InputVarType.object && (!payload.children || payload.children.length === 0) && (
           <CodeEditor
@@ -355,7 +442,7 @@ const FormItem: FC<Props> = ({
         }
 
         {/* Array[String] type - list of text inputs */}
-        {isArrayString && (
+        {isArrayString && inputMode === 'form' && (
           <div className='space-y-2'>
             {(value || ['']).map((item: string, index: number) => (
               <div key={index} className='flex items-center gap-2'>
@@ -382,9 +469,21 @@ const FormItem: FC<Props> = ({
             </button>
           </div>
         )}
+        {isArrayString && inputMode === 'json' && (
+          <CodeEditor
+            value={jsonValue}
+            language={CodeLanguage.json}
+            onChange={handleJsonChange}
+            noWrapper
+            className='bg h-[80px] overflow-y-auto rounded-[10px] bg-components-input-bg-normal p-1'
+            placeholder={
+              <div className='whitespace-pre'>{'["item1", "item2"]'}</div>
+            }
+          />
+        )}
 
         {/* Array[Number] type - list of number inputs */}
-        {isArrayNumber && (
+        {isArrayNumber && inputMode === 'form' && (
           <div className='space-y-2'>
             {(value || [0]).map((item: number, index: number) => (
               <div key={index} className='flex items-center gap-2'>
@@ -412,9 +511,21 @@ const FormItem: FC<Props> = ({
             </button>
           </div>
         )}
+        {isArrayNumber && inputMode === 'json' && (
+          <CodeEditor
+            value={jsonValue}
+            language={CodeLanguage.json}
+            onChange={handleJsonChange}
+            noWrapper
+            className='bg h-[80px] overflow-y-auto rounded-[10px] bg-components-input-bg-normal p-1'
+            placeholder={
+              <div className='whitespace-pre'>{'[1, 2, 3]'}</div>
+            }
+          />
+        )}
 
         {/* Array[Boolean] type - list of boolean toggles */}
-        {isArrayBoolean && (
+        {isArrayBoolean && inputMode === 'form' && (
           <div className='space-y-2'>
             {(value || [false]).map((item: boolean, index: number) => (
               <div key={index} className='flex items-center gap-2'>
@@ -441,9 +552,21 @@ const FormItem: FC<Props> = ({
             </button>
           </div>
         )}
+        {isArrayBoolean && inputMode === 'json' && (
+          <CodeEditor
+            value={jsonValue}
+            language={CodeLanguage.json}
+            onChange={handleJsonChange}
+            noWrapper
+            className='bg h-[80px] overflow-y-auto rounded-[10px] bg-components-input-bg-normal p-1'
+            placeholder={
+              <div className='whitespace-pre'>{'[true, false]'}</div>
+            }
+          />
+        )}
 
         {/* Array[Object] type with children - list of nested object inputs */}
-        {isArrayObject && payload.children && payload.children.length > 0 && (
+        {isArrayObject && payload.children && payload.children.length > 0 && inputMode === 'form' && (
           <div className='space-y-2'>
             {(value || [{}]).map((item: Record<string, unknown>, index: number) => (
               <div key={index} className='rounded-lg border border-components-panel-border bg-components-panel-bg p-3'>
@@ -473,6 +596,18 @@ const FormItem: FC<Props> = ({
               + {t('appDebug.variableConfig.addOption')}
             </button>
           </div>
+        )}
+        {isArrayObject && payload.children && payload.children.length > 0 && inputMode === 'json' && (
+          <CodeEditor
+            value={jsonValue}
+            language={CodeLanguage.json}
+            onChange={handleJsonChange}
+            noWrapper
+            className='bg h-[120px] overflow-y-auto rounded-[10px] bg-components-input-bg-normal p-1'
+            placeholder={
+              <div className='whitespace-pre'>{'[\n  { }\n]'}</div>
+            }
+          />
         )}
 
         {/* Array[Object] type without children - JSON array editor */}

@@ -28,6 +28,8 @@ import { StopCircle } from '@/app/components/base/icons/src/vender/solid/mediaAn
 import type { InputVarChild } from '@/app/components/workflow/types'
 import { InputVarType } from '@/app/components/workflow/types'
 
+type InputMode = 'form' | 'json'
+
 /**
  * Converts PromptVariableChild to InputVarChild for NestedObjectInput compatibility
  */
@@ -74,6 +76,45 @@ const RunOnce: FC<IRunOnceProps> = ({
   const isPC = media === MediaType.pc
   const [isInitialized, setIsInitialized] = useState(false)
 
+  // Input mode state for complex types (per variable)
+  const [inputModes, setInputModes] = useState<Record<string, InputMode>>({})
+
+  // Get input mode for a variable
+  const getInputMode = useCallback((key: string): InputMode => {
+    return inputModes[key] || 'form'
+  }, [inputModes])
+
+  // Set input mode for a variable
+  const setInputMode = useCallback((key: string, mode: InputMode) => {
+    setInputModes(prev => ({ ...prev, [key]: mode }))
+  }, [])
+
+  const handleInputsChange = useCallback((newInputs: Record<string, any>) => {
+    onInputsChange(newInputs)
+    inputsRef.current = newInputs
+  }, [onInputsChange, inputsRef])
+
+  // Handle JSON input change with validation
+  const handleJsonChange = useCallback((key: string, jsonValue: string) => {
+    try {
+      const parsed = JSON.parse(jsonValue)
+      handleInputsChange({ ...inputsRef.current, [key]: parsed })
+    }
+    catch {
+      // Keep the raw string if not valid JSON - will be validated on submit
+      handleInputsChange({ ...inputsRef.current, [key]: jsonValue })
+    }
+  }, [inputsRef, handleInputsChange])
+
+  // Get JSON string representation of value
+  const getJsonValue = useCallback((value: any): string => {
+    if (typeof value === 'string')
+      return value
+    if (value === undefined || value === null)
+      return ''
+    return JSON.stringify(value, null, 2)
+  }, [])
+
   const onClear = () => {
     const newInputs: Record<string, any> = {}
     promptConfig.prompt_variables.forEach((item) => {
@@ -109,11 +150,6 @@ const RunOnce: FC<IRunOnceProps> = ({
     e.preventDefault()
     runControl?.onStop?.()
   }, [isRunning, runControl])
-
-  const handleInputsChange = useCallback((newInputs: Record<string, any>) => {
-    onInputsChange(newInputs)
-    inputsRef.current = newInputs
-  }, [onInputsChange, inputsRef])
 
   // Array item change handler for array types
   const handleArrayItemChange = useCallback((key: string, index: number, newValue: any) => {
@@ -181,233 +217,335 @@ const RunOnce: FC<IRunOnceProps> = ({
         {/* input form */}
         <form onSubmit={onSubmit}>
           {(inputs === null || inputs === undefined || Object.keys(inputs).length === 0) || !isInitialized ? null
-            : promptConfig.prompt_variables.filter(item => item.hide !== true).map(item => (
-              <div className='mt-4 w-full' key={item.key}>
-                {item.type !== 'checkbox' && (
-                  <div className='system-md-semibold flex h-6 items-center gap-1 text-text-secondary'>
-                    <div className='truncate'>{item.name}</div>
-                    {!item.required && <span className='system-xs-regular text-text-tertiary'>{t('workflow.panel.optional')}</span>}
-                  </div>
-                )}
-                <div className='mt-1'>
-                  {item.type === 'select' && (
-                    <Select
-                      className='w-full'
-                      defaultValue={inputs[item.key]}
-                      onSelect={(i) => { handleInputsChange({ ...inputsRef.current, [item.key]: i.value }) }}
-                      items={(item.options || []).map(i => ({ name: i, value: i }))}
-                      allowSearch={false}
-                    />
+            : promptConfig.prompt_variables.filter(item => item.hide !== true).map((item) => {
+              const isComplexType = [InputVarType.object, InputVarType.arrayObject, InputVarType.arrayString, InputVarType.arrayNumber, InputVarType.arrayBoolean].includes(item.type as InputVarType)
+              const hasChildren = item.children && item.children.length > 0
+              const currentMode = getInputMode(item.key)
+
+              return (
+                <div className='mt-4 w-full' key={item.key}>
+                  {item.type !== 'checkbox' && (
+                    <div className='system-md-semibold flex h-6 items-center justify-between gap-1 text-text-secondary'>
+                      <div className='flex items-center gap-1 truncate'>
+                        <div className='truncate'>{item.name}</div>
+                        {!item.required && <span className='system-xs-regular text-text-tertiary'>{t('workflow.panel.optional')}</span>}
+                      </div>
+                      {/* Mode switcher for complex types with children */}
+                      {isComplexType && hasChildren && (
+                        <div className='flex shrink-0 items-center gap-1'>
+                          <button
+                            type='button'
+                            onClick={() => setInputMode(item.key, 'form')}
+                            className={cn(
+                              'system-xs-medium rounded px-1.5 py-0.5 transition-colors',
+                              currentMode === 'form'
+                                ? 'bg-components-button-secondary-bg text-text-secondary'
+                                : 'text-text-tertiary hover:text-text-secondary',
+                            )}
+                          >
+                            {t('workflow.chatVariable.modal.editInForm')}
+                          </button>
+                          <button
+                            type='button'
+                            onClick={() => setInputMode(item.key, 'json')}
+                            className={cn(
+                              'system-xs-medium rounded px-1.5 py-0.5 transition-colors',
+                              currentMode === 'json'
+                                ? 'bg-components-button-secondary-bg text-text-secondary'
+                                : 'text-text-tertiary hover:text-text-secondary',
+                            )}
+                          >
+                            {t('workflow.chatVariable.modal.editInJSON')}
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   )}
-                  {item.type === 'string' && (
-                    <Input
-                      type="text"
-                      placeholder={item.name}
-                      value={inputs[item.key]}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => { handleInputsChange({ ...inputsRef.current, [item.key]: e.target.value }) }}
-                      maxLength={item.max_length || DEFAULT_VALUE_MAX_LEN}
-                    />
-                  )}
-                  {item.type === 'paragraph' && (
-                    <Textarea
-                      className='h-[104px] sm:text-xs'
-                      placeholder={item.name}
-                      value={inputs[item.key]}
-                      onChange={(e: ChangeEvent<HTMLTextAreaElement>) => { handleInputsChange({ ...inputsRef.current, [item.key]: e.target.value }) }}
-                    />
-                  )}
-                  {item.type === 'number' && (
-                    <Input
-                      type="number"
-                      placeholder={item.name}
-                      value={inputs[item.key]}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) => { handleInputsChange({ ...inputsRef.current, [item.key]: e.target.value }) }}
-                    />
-                  )}
-                  {item.type === 'checkbox' && (
-                    <BoolInput
-                      name={item.name || item.key}
-                      value={!!inputs[item.key]}
-                      required={item.required}
-                      onChange={(value) => { handleInputsChange({ ...inputsRef.current, [item.key]: value }) }}
-                    />
-                  )}
-                  {item.type === 'file' && (
-                    <FileUploaderInAttachmentWrapper
-                      value={(inputs[item.key] && typeof inputs[item.key] === 'object') ? [inputs[item.key]] : []}
-                      onChange={(files) => { handleInputsChange({ ...inputsRef.current, [item.key]: files[0] }) }}
-                      fileConfig={{
-                        ...item.config,
-                        fileUploadConfig: (visionConfig as any).fileUploadConfig,
-                      }}
-                    />
-                  )}
-                  {item.type === 'file-list' && (
-                    <FileUploaderInAttachmentWrapper
-                      value={Array.isArray(inputs[item.key]) ? inputs[item.key] : []}
-                      onChange={(files) => { handleInputsChange({ ...inputsRef.current, [item.key]: files }) }}
-                      fileConfig={{
-                        ...item.config,
-                        fileUploadConfig: (visionConfig as any).fileUploadConfig,
-                      }}
-                    />
-                  )}
-                  {/* JSON Object type with children - nested object input */}
-                  {item.type === InputVarType.object && item.children && item.children.length > 0 && (
-                    <div className='rounded-lg border border-components-panel-border bg-components-panel-bg p-3'>
-                      <NestedObjectInput
-                        definition={convertToInputVarChild(item.children)}
-                        value={typeof inputs[item.key] === 'object' && inputs[item.key] !== null ? inputs[item.key] as Record<string, unknown> : {}}
+                  <div className='mt-1'>
+                    {item.type === 'select' && (
+                      <Select
+                        className='w-full'
+                        defaultValue={inputs[item.key]}
+                        onSelect={(i) => { handleInputsChange({ ...inputsRef.current, [item.key]: i.value }) }}
+                        items={(item.options || []).map(i => ({ name: i, value: i }))}
+                        allowSearch={false}
+                      />
+                    )}
+                    {item.type === 'string' && (
+                      <Input
+                        type="text"
+                        placeholder={item.name}
+                        value={inputs[item.key]}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => { handleInputsChange({ ...inputsRef.current, [item.key]: e.target.value }) }}
+                        maxLength={item.max_length || DEFAULT_VALUE_MAX_LEN}
+                      />
+                    )}
+                    {item.type === 'paragraph' && (
+                      <Textarea
+                        className='h-[104px] sm:text-xs'
+                        placeholder={item.name}
+                        value={inputs[item.key]}
+                        onChange={(e: ChangeEvent<HTMLTextAreaElement>) => { handleInputsChange({ ...inputsRef.current, [item.key]: e.target.value }) }}
+                      />
+                    )}
+                    {item.type === 'number' && (
+                      <Input
+                        type="number"
+                        placeholder={item.name}
+                        value={inputs[item.key]}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => { handleInputsChange({ ...inputsRef.current, [item.key]: e.target.value }) }}
+                      />
+                    )}
+                    {item.type === 'checkbox' && (
+                      <BoolInput
+                        name={item.name || item.key}
+                        value={!!inputs[item.key]}
+                        required={item.required}
                         onChange={(value) => { handleInputsChange({ ...inputsRef.current, [item.key]: value }) }}
                       />
-                    </div>
-                  )}
-                  {/* JSON Object type without children - JSON editor */}
-                  {item.type === InputVarType.object && (!item.children || item.children.length === 0) && (
-                    <CodeEditor
-                      language={CodeLanguage.json}
-                      value={inputs[item.key]}
-                      onChange={(value) => { handleInputsChange({ ...inputsRef.current, [item.key]: value }) }}
-                      noWrapper
-                      className='h-[80px] overflow-y-auto rounded-[10px] bg-components-input-bg-normal p-1'
-                      placeholder={
-                        <div className='whitespace-pre'>{item.json_schema}</div>
-                      }
-                    />
-                  )}
-                  {/* Array[String] type - list of text inputs */}
-                  {item.type === InputVarType.arrayString && (
-                    <div className='space-y-2'>
-                      {((inputs[item.key] as string[]) || ['']).map((arrayItem: string, idx: number) => (
-                        <div key={idx} className='flex items-center gap-2'>
-                          <Input
-                            value={arrayItem || ''}
-                            onChange={e => handleArrayItemChange(item.key, idx, e.target.value)}
-                            placeholder={`${t('appDebug.variableConfig.content')} ${idx + 1}`}
-                            className='flex-1'
-                          />
-                          {((inputs[item.key] as string[]) || []).length > 1 && (
-                            <RiDeleteBinLine
-                              onClick={() => handleArrayItemRemove(item.key, idx)}
-                              className='h-4 w-4 shrink-0 cursor-pointer text-text-tertiary hover:text-text-secondary'
+                    )}
+                    {item.type === 'file' && (
+                      <FileUploaderInAttachmentWrapper
+                        value={(inputs[item.key] && typeof inputs[item.key] === 'object') ? [inputs[item.key]] : []}
+                        onChange={(files) => { handleInputsChange({ ...inputsRef.current, [item.key]: files[0] }) }}
+                        fileConfig={{
+                          ...item.config,
+                          fileUploadConfig: (visionConfig as any).fileUploadConfig,
+                        }}
+                      />
+                    )}
+                    {item.type === 'file-list' && (
+                      <FileUploaderInAttachmentWrapper
+                        value={Array.isArray(inputs[item.key]) ? inputs[item.key] : []}
+                        onChange={(files) => { handleInputsChange({ ...inputsRef.current, [item.key]: files }) }}
+                        fileConfig={{
+                          ...item.config,
+                          fileUploadConfig: (visionConfig as any).fileUploadConfig,
+                        }}
+                      />
+                    )}
+                    {/* JSON Object type with children - nested object input */}
+                    {item.type === InputVarType.object && item.children && item.children.length > 0 && currentMode === 'form' && (
+                      <div className='rounded-lg border border-components-panel-border bg-components-panel-bg p-3'>
+                        <NestedObjectInput
+                          definition={convertToInputVarChild(item.children)}
+                          value={typeof inputs[item.key] === 'object' && inputs[item.key] !== null ? inputs[item.key] as Record<string, unknown> : {}}
+                          onChange={(value) => { handleInputsChange({ ...inputsRef.current, [item.key]: value }) }}
+                        />
+                      </div>
+                    )}
+                    {/* JSON Object type with children - JSON editor mode */}
+                    {item.type === InputVarType.object && item.children && item.children.length > 0 && currentMode === 'json' && (
+                      <CodeEditor
+                        value={getJsonValue(inputs[item.key])}
+                        language={CodeLanguage.json}
+                        onChange={value => handleJsonChange(item.key, value)}
+                        noWrapper
+                        className='h-[120px] overflow-y-auto rounded-[10px] bg-components-input-bg-normal p-1'
+                        placeholder={
+                          <div className='whitespace-pre'>{'{ }'}</div>
+                        }
+                      />
+                    )}
+                    {/* JSON Object type without children - JSON editor */}
+                    {item.type === InputVarType.object && (!item.children || item.children.length === 0) && (
+                      <CodeEditor
+                        language={CodeLanguage.json}
+                        value={inputs[item.key]}
+                        onChange={(value) => { handleInputsChange({ ...inputsRef.current, [item.key]: value }) }}
+                        noWrapper
+                        className='h-[80px] overflow-y-auto rounded-[10px] bg-components-input-bg-normal p-1'
+                        placeholder={
+                          <div className='whitespace-pre'>{item.json_schema}</div>
+                        }
+                      />
+                    )}
+                    {/* Array[String] type - list of text inputs */}
+                    {item.type === InputVarType.arrayString && currentMode === 'form' && (
+                      <div className='space-y-2'>
+                        {((inputs[item.key] as string[]) || ['']).map((arrayItem: string, idx: number) => (
+                          <div key={idx} className='flex items-center gap-2'>
+                            <Input
+                              value={arrayItem || ''}
+                              onChange={e => handleArrayItemChange(item.key, idx, e.target.value)}
+                              placeholder={`${t('appDebug.variableConfig.content')} ${idx + 1}`}
+                              className='flex-1'
                             />
-                          )}
-                        </div>
-                      ))}
-                      <button
-                        type='button'
-                        onClick={() => handleArrayItemAdd(item.key, '')}
-                        className='system-xs-medium text-text-accent hover:text-text-accent-secondary'
-                      >
-                        + {t('appDebug.variableConfig.addOption')}
-                      </button>
-                    </div>
-                  )}
-                  {/* Array[Number] type - list of number inputs */}
-                  {item.type === InputVarType.arrayNumber && (
-                    <div className='space-y-2'>
-                      {((inputs[item.key] as number[]) || [0]).map((arrayItem: number, idx: number) => (
-                        <div key={idx} className='flex items-center gap-2'>
-                          <Input
-                            type='number'
-                            value={arrayItem ?? ''}
-                            onChange={e => handleArrayItemChange(item.key, idx, e.target.value ? Number(e.target.value) : 0)}
-                            placeholder={`${t('appDebug.variableConfig.content')} ${idx + 1}`}
-                            className='flex-1'
-                          />
-                          {((inputs[item.key] as number[]) || []).length > 1 && (
-                            <RiDeleteBinLine
-                              onClick={() => handleArrayItemRemove(item.key, idx)}
-                              className='h-4 w-4 shrink-0 cursor-pointer text-text-tertiary hover:text-text-secondary'
-                            />
-                          )}
-                        </div>
-                      ))}
-                      <button
-                        type='button'
-                        onClick={() => handleArrayItemAdd(item.key, 0)}
-                        className='system-xs-medium text-text-accent hover:text-text-accent-secondary'
-                      >
-                        + {t('appDebug.variableConfig.addOption')}
-                      </button>
-                    </div>
-                  )}
-                  {/* Array[Boolean] type - list of boolean toggles */}
-                  {item.type === InputVarType.arrayBoolean && (
-                    <div className='space-y-2'>
-                      {((inputs[item.key] as boolean[]) || [false]).map((arrayItem: boolean, idx: number) => (
-                        <div key={idx} className='flex items-center gap-2'>
-                          <BoolInput
-                            name={`${item.name || item.key} [${idx + 1}]`}
-                            value={!!arrayItem}
-                            required={false}
-                            onChange={v => handleArrayItemChange(item.key, idx, v)}
-                          />
-                          {((inputs[item.key] as boolean[]) || []).length > 1 && (
-                            <RiDeleteBinLine
-                              onClick={() => handleArrayItemRemove(item.key, idx)}
-                              className='h-4 w-4 shrink-0 cursor-pointer text-text-tertiary hover:text-text-secondary'
-                            />
-                          )}
-                        </div>
-                      ))}
-                      <button
-                        type='button'
-                        onClick={() => handleArrayItemAdd(item.key, false)}
-                        className='system-xs-medium text-text-accent hover:text-text-accent-secondary'
-                      >
-                        + {t('appDebug.variableConfig.addOption')}
-                      </button>
-                    </div>
-                  )}
-                  {/* Array[Object] type with children - list of nested object inputs */}
-                  {item.type === InputVarType.arrayObject && item.children && item.children.length > 0 && (
-                    <div className='space-y-2'>
-                      {((inputs[item.key] as Record<string, unknown>[]) || [{}]).map((arrayItem: Record<string, unknown>, idx: number) => (
-                        <div key={idx} className='rounded-lg border border-components-panel-border bg-components-panel-bg p-3'>
-                          <div className='mb-2 flex items-center justify-between'>
-                            <span className='system-xs-semibold text-text-secondary'>
-                              {t('appDebug.variableConfig.content')} {idx + 1}
-                            </span>
-                            {((inputs[item.key] as Record<string, unknown>[]) || []).length > 1 && (
+                            {((inputs[item.key] as string[]) || []).length > 1 && (
                               <RiDeleteBinLine
                                 onClick={() => handleArrayItemRemove(item.key, idx)}
-                                className='h-4 w-4 cursor-pointer text-text-tertiary hover:text-text-secondary'
+                                className='h-4 w-4 shrink-0 cursor-pointer text-text-tertiary hover:text-text-secondary'
                               />
                             )}
                           </div>
-                          <NestedObjectInput
-                            definition={convertToInputVarChild(item.children)}
-                            value={typeof arrayItem === 'object' && arrayItem !== null ? arrayItem : {}}
-                            onChange={v => handleArrayItemChange(item.key, idx, v)}
-                          />
-                        </div>
-                      ))}
-                      <button
-                        type='button'
-                        onClick={() => handleArrayItemAdd(item.key, {})}
-                        className='system-xs-medium text-text-accent hover:text-text-accent-secondary'
-                      >
-                        + {t('appDebug.variableConfig.addOption')}
-                      </button>
-                    </div>
-                  )}
-                  {/* Array[Object] type without children - JSON array editor */}
-                  {item.type === InputVarType.arrayObject && (!item.children || item.children.length === 0) && (
-                    <CodeEditor
-                      value={typeof inputs[item.key] === 'string' ? inputs[item.key] : (typeof inputs[item.key] === 'object' ? inputs[item.key] : '')}
-                      language={CodeLanguage.json}
-                      onChange={(value) => { handleInputsChange({ ...inputsRef.current, [item.key]: value }) }}
-                      noWrapper
-                      className='h-[120px] overflow-y-auto rounded-[10px] bg-components-input-bg-normal p-1'
-                      placeholder={
-                        <div className='whitespace-pre'>{'[\n  { }\n]'}</div>
-                      }
-                    />
-                  )}
+                        ))}
+                        <button
+                          type='button'
+                          onClick={() => handleArrayItemAdd(item.key, '')}
+                          className='system-xs-medium text-text-accent hover:text-text-accent-secondary'
+                        >
+                          + {t('appDebug.variableConfig.addOption')}
+                        </button>
+                      </div>
+                    )}
+                    {/* Array[String] type - JSON editor mode */}
+                    {item.type === InputVarType.arrayString && currentMode === 'json' && (
+                      <CodeEditor
+                        value={getJsonValue(inputs[item.key])}
+                        language={CodeLanguage.json}
+                        onChange={value => handleJsonChange(item.key, value)}
+                        noWrapper
+                        className='h-[80px] overflow-y-auto rounded-[10px] bg-components-input-bg-normal p-1'
+                        placeholder={
+                          <div className='whitespace-pre'>{'["item1", "item2"]'}</div>
+                        }
+                      />
+                    )}
+                    {/* Array[Number] type - list of number inputs */}
+                    {item.type === InputVarType.arrayNumber && currentMode === 'form' && (
+                      <div className='space-y-2'>
+                        {((inputs[item.key] as number[]) || [0]).map((arrayItem: number, idx: number) => (
+                          <div key={idx} className='flex items-center gap-2'>
+                            <Input
+                              type='number'
+                              value={arrayItem ?? ''}
+                              onChange={e => handleArrayItemChange(item.key, idx, e.target.value ? Number(e.target.value) : 0)}
+                              placeholder={`${t('appDebug.variableConfig.content')} ${idx + 1}`}
+                              className='flex-1'
+                            />
+                            {((inputs[item.key] as number[]) || []).length > 1 && (
+                              <RiDeleteBinLine
+                                onClick={() => handleArrayItemRemove(item.key, idx)}
+                                className='h-4 w-4 shrink-0 cursor-pointer text-text-tertiary hover:text-text-secondary'
+                              />
+                            )}
+                          </div>
+                        ))}
+                        <button
+                          type='button'
+                          onClick={() => handleArrayItemAdd(item.key, 0)}
+                          className='system-xs-medium text-text-accent hover:text-text-accent-secondary'
+                        >
+                          + {t('appDebug.variableConfig.addOption')}
+                        </button>
+                      </div>
+                    )}
+                    {/* Array[Number] type - JSON editor mode */}
+                    {item.type === InputVarType.arrayNumber && currentMode === 'json' && (
+                      <CodeEditor
+                        value={getJsonValue(inputs[item.key])}
+                        language={CodeLanguage.json}
+                        onChange={value => handleJsonChange(item.key, value)}
+                        noWrapper
+                        className='h-[80px] overflow-y-auto rounded-[10px] bg-components-input-bg-normal p-1'
+                        placeholder={
+                          <div className='whitespace-pre'>{'[1, 2, 3]'}</div>
+                        }
+                      />
+                    )}
+                    {/* Array[Boolean] type - list of boolean toggles */}
+                    {item.type === InputVarType.arrayBoolean && currentMode === 'form' && (
+                      <div className='space-y-2'>
+                        {((inputs[item.key] as boolean[]) || [false]).map((arrayItem: boolean, idx: number) => (
+                          <div key={idx} className='flex items-center gap-2'>
+                            <BoolInput
+                              name={`${item.name || item.key} [${idx + 1}]`}
+                              value={!!arrayItem}
+                              required={false}
+                              onChange={v => handleArrayItemChange(item.key, idx, v)}
+                            />
+                            {((inputs[item.key] as boolean[]) || []).length > 1 && (
+                              <RiDeleteBinLine
+                                onClick={() => handleArrayItemRemove(item.key, idx)}
+                                className='h-4 w-4 shrink-0 cursor-pointer text-text-tertiary hover:text-text-secondary'
+                              />
+                            )}
+                          </div>
+                        ))}
+                        <button
+                          type='button'
+                          onClick={() => handleArrayItemAdd(item.key, false)}
+                          className='system-xs-medium text-text-accent hover:text-text-accent-secondary'
+                        >
+                          + {t('appDebug.variableConfig.addOption')}
+                        </button>
+                      </div>
+                    )}
+                    {/* Array[Boolean] type - JSON editor mode */}
+                    {item.type === InputVarType.arrayBoolean && currentMode === 'json' && (
+                      <CodeEditor
+                        value={getJsonValue(inputs[item.key])}
+                        language={CodeLanguage.json}
+                        onChange={value => handleJsonChange(item.key, value)}
+                        noWrapper
+                        className='h-[80px] overflow-y-auto rounded-[10px] bg-components-input-bg-normal p-1'
+                        placeholder={
+                          <div className='whitespace-pre'>{'[true, false]'}</div>
+                        }
+                      />
+                    )}
+                    {/* Array[Object] type with children - list of nested object inputs */}
+                    {item.type === InputVarType.arrayObject && item.children && item.children.length > 0 && currentMode === 'form' && (
+                      <div className='space-y-2'>
+                        {((inputs[item.key] as Record<string, unknown>[]) || [{}]).map((arrayItem: Record<string, unknown>, idx: number) => (
+                          <div key={idx} className='rounded-lg border border-components-panel-border bg-components-panel-bg p-3'>
+                            <div className='mb-2 flex items-center justify-between'>
+                              <span className='system-xs-semibold text-text-secondary'>
+                                {t('appDebug.variableConfig.content')} {idx + 1}
+                              </span>
+                              {((inputs[item.key] as Record<string, unknown>[]) || []).length > 1 && (
+                                <RiDeleteBinLine
+                                  onClick={() => handleArrayItemRemove(item.key, idx)}
+                                  className='h-4 w-4 cursor-pointer text-text-tertiary hover:text-text-secondary'
+                                />
+                              )}
+                            </div>
+                            <NestedObjectInput
+                              definition={convertToInputVarChild(item.children)}
+                              value={typeof arrayItem === 'object' && arrayItem !== null ? arrayItem : {}}
+                              onChange={v => handleArrayItemChange(item.key, idx, v)}
+                            />
+                          </div>
+                        ))}
+                        <button
+                          type='button'
+                          onClick={() => handleArrayItemAdd(item.key, {})}
+                          className='system-xs-medium text-text-accent hover:text-text-accent-secondary'
+                        >
+                          + {t('appDebug.variableConfig.addOption')}
+                        </button>
+                      </div>
+                    )}
+                    {/* Array[Object] type with children - JSON editor mode */}
+                    {item.type === InputVarType.arrayObject && item.children && item.children.length > 0 && currentMode === 'json' && (
+                      <CodeEditor
+                        value={getJsonValue(inputs[item.key])}
+                        language={CodeLanguage.json}
+                        onChange={value => handleJsonChange(item.key, value)}
+                        noWrapper
+                        className='h-[120px] overflow-y-auto rounded-[10px] bg-components-input-bg-normal p-1'
+                        placeholder={
+                          <div className='whitespace-pre'>{'[\n  { }\n]'}</div>
+                        }
+                      />
+                    )}
+                    {/* Array[Object] type without children - JSON array editor */}
+                    {item.type === InputVarType.arrayObject && (!item.children || item.children.length === 0) && (
+                      <CodeEditor
+                        value={typeof inputs[item.key] === 'string' ? inputs[item.key] : (typeof inputs[item.key] === 'object' ? inputs[item.key] : '')}
+                        language={CodeLanguage.json}
+                        onChange={(value) => { handleInputsChange({ ...inputsRef.current, [item.key]: value }) }}
+                        noWrapper
+                        className='h-[120px] overflow-y-auto rounded-[10px] bg-components-input-bg-normal p-1'
+                        placeholder={
+                          <div className='whitespace-pre'>{'[\n  { }\n]'}</div>
+                        }
+                      />
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           {
             visionConfig?.enabled && (
               <div className="mt-4 w-full">

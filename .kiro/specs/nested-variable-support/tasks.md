@@ -162,16 +162,128 @@
 - [x] 17. Final Checkpoint - 完整功能验证
   - 确保所有测试通过，如有问题请询问用户
 
-- [ ] 18. 修复 Array[Object] 类型识别 Bug
-  - [ ] 18.1 修复 `getVarType` 函数中的类型识别问题
+- [x] 18. 修复 Array[Object] 类型识别 Bug
+  - [x] 18.1 修复 `getVarType` 函数中的类型识别问题
     - 修改 `web/app/components/workflow/nodes/_base/components/variable/utils.ts`
     - 当变量有 `children.schema.properties` 且 `valueSelector.length === 2` 时，返回原始 `targetVar.type` 而不是默认的 `VarType.object`
     - 确保 `array[object]` 类型的变量在有子变量时仍然保持 `array[object]` 类型
     - _Requirements: 4.6, 4.7_
-  - [ ] 18.2 添加单元测试验证类型保持
-    - 测试 `array[object]` 类型变量在有 children 时类型不变
-    - 测试 `object` 类型变量在有 children 时类型不变
+  - [x] 18.2 修复相关组件中的类型识别
+    - 修改 `web/app/components/workflow/nodes/_base/components/variable/var-reference-vars.tsx`
+    - 修改 `web/app/components/workflow/nodes/_base/components/variable/object-child-tree-panel/picker/field.tsx`
     - _Requirements: 4.6, 4.7_
+
+- [x] 19. Configuration 页面添加新变量类型支持
+  - [x] 19.1 更新变量类型选择器
+    - 修改 `web/app/components/app/configuration/config-var/select-var-type.tsx`
+    - 添加 `object`、`array[object]`、`array[string]`、`array[number]`、`array[boolean]` 类型选项
+    - _Requirements: 1.3, 1.4_
+  - [x] 19.2 更新变量配置模态框
+    - 修改 `web/app/components/app/configuration/config-var/config-modal/index.tsx`
+    - 支持复杂类型的子变量定义
+    - _Requirements: 1.1, 1.2, 2.1, 2.2, 2.3, 2.4_
+  - [x] 19.3 更新变量列表组件
+    - 修改 `web/app/components/app/configuration/config-var/index.tsx`
+    - 正确显示复杂类型变量
+    - _Requirements: 7.1_
+
+- [x] 20. 调试与预览页面支持新类型输入
+  - [x] 20.1 更新 PromptValuePanel 组件
+    - 修改 `web/app/components/app/configuration/prompt-value-panel/index.tsx`
+    - 支持 `object`、`array[object]`、`array[string]`、`array[number]`、`array[boolean]` 类型的输入
+    - _Requirements: 7.1, 8.3_
+  - [x] 20.2 更新 debug 模型类型定义
+    - 修改 `web/models/debug.ts`
+    - 添加 `PromptVariableChild` 类型支持嵌套结构
+    - _Requirements: 9.1_
+
+- [x] 21. 修复发布时子变量定义未保存的 Bug
+  - [x] 21.1 更新前端模型配置工具函数
+    - 修改 `web/utils/model-config.ts`
+    - 确保 `children` 字段在发布时被正确序列化
+    - _Requirements: 5.1, 5.2_
+  - [x] 21.2 更新后端变量管理器
+    - 修改 `api/core/app/app_config/easy_ui_based_app/variables/manager.py`
+    - 支持解析和保存嵌套变量定义
+    - _Requirements: 5.1, 5.2, 5.3_
+
+- [x] 22. LLM 节点增加输入变量功能
+  - [x] 22.1 更新 LLM 节点类型定义
+    - 修改 `web/app/components/workflow/nodes/llm/types.ts`
+    - 添加 `input_variables` 字段
+    - _Requirements: 4.1_
+  - [x] 22.2 更新 LLM 节点配置逻辑
+    - 修改 `web/app/components/workflow/nodes/llm/use-config.ts`
+    - 实现输入变量的增删改逻辑
+    - _Requirements: 4.1, 4.2_
+  - [x] 22.3 更新 LLM 节点面板
+    - 修改 `web/app/components/workflow/nodes/llm/panel.tsx`
+    - 添加输入变量配置 UI
+    - _Requirements: 7.1_
+  - [x] 22.4 更新后端 LLM 节点实体和执行逻辑
+    - 修改 `api/core/workflow/nodes/llm/entities.py`
+    - 修改 `api/core/workflow/nodes/llm/node.py`
+    - 支持输入变量的解析和执行
+    - _Requirements: 8.3, 8.4_
+
+- [x] 23. ShareLayout 分享页面支持新复杂变量类型输入
+  - [x] 23.1 更新 text-generation run-once 组件
+    - 修改 `web/app/components/share/text-generation/run-once/index.tsx`
+    - 支持复杂类型变量的输入
+    - _Requirements: 7.1, 8.3_
+  - [x] 23.2 更新 embedded-chatbot inputs-form 组件
+    - 修改 `web/app/components/base/chat/embedded-chatbot/inputs-form/content.tsx`
+    - 支持复杂类型变量的输入
+    - _Requirements: 7.1, 8.3_
+  - [x] 23.3 更新 chat-with-history inputs-form 组件
+    - 修改 `web/app/components/base/chat/chat-with-history/inputs-form/content.tsx`
+    - 支持复杂类型变量的输入
+    - _Requirements: 7.1, 8.3_
+
+- [x] 24. 将 json_object 类型重命名为 object
+  - [x] 24.1 更新前端类型定义
+    - 修改 `web/app/components/workflow/types.ts`
+    - 将 `json_object` 改为 `object`
+    - _Requirements: 1.3_
+  - [x] 24.2 更新后端类型定义和处理逻辑
+    - 修改 `api/controllers/console/app/nested_variable_utils.py`
+    - 修改 `api/core/app/app_config/entities.py`
+    - 修改 `api/core/app/app_config/easy_ui_based_app/variables/manager.py`
+    - 修改 `api/core/app/apps/base_app_generator.py`
+    - _Requirements: 1.3, 5.5_
+
+- [x] 25. Workflow Test Run 复杂变量支持 JSON 编辑模式
+  - [x] 25.1 更新 FormItem 组件
+    - 修改 `web/app/components/workflow/nodes/_base/components/before-run-form/form-item.tsx`
+    - 添加表单模式/JSON 模式切换功能
+    - _Requirements: 7.1_
+  - [x] 25.2 更新后端输入值解析
+    - 修改 `api/core/app/apps/base_app_generator.py`
+    - 支持 JSON 字符串输入的解析
+    - _Requirements: 8.3_
+
+- [x] 26. ShareLayout 分享页面复杂变量添加 JSON 编辑模式
+  - [x] 26.1 更新 text-generation run-once 组件
+    - 修改 `web/app/components/share/text-generation/run-once/index.tsx`
+    - 添加 JSON 编辑模式切换
+    - _Requirements: 7.1_
+  - [x] 26.2 更新 embedded-chatbot inputs-form 组件
+    - 修改 `web/app/components/base/chat/embedded-chatbot/inputs-form/content.tsx`
+    - 添加 JSON 编辑模式切换
+    - _Requirements: 7.1_
+  - [x] 26.3 更新 chat-with-history inputs-form 组件
+    - 修改 `web/app/components/base/chat/chat-with-history/inputs-form/content.tsx`
+    - 添加 JSON 编辑模式切换
+    - _Requirements: 7.1_
+
+- [x] 27. Configuration 页面调试与预览功能添加 JSON 编辑模式
+  - [x] 27.1 更新 PromptValuePanel 组件
+    - 修改 `web/app/components/app/configuration/prompt-value-panel/index.tsx`
+    - 添加 `InputMode` 类型和 `inputModes` 状态
+    - 添加 `getInputMode` / `setInputMode` 函数
+    - 添加 `handleJsonChange` / `getJsonValue` 函数
+    - 为复杂变量类型添加模式切换按钮
+    - _Requirements: 7.1_
 
 ## Notes
 

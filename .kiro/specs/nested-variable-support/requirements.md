@@ -118,3 +118,28 @@
 3. THE Workflow_Run_API SHALL accept nested object values as input parameters
 4. THE Workflow_Run_API SHALL return nested object values in the output response
 5. THE API_Documentation SHALL include examples of nested variable configurations
+
+### Requirement 9: JSON 编辑模式支持
+
+**User Story:** As a workflow designer, I want to switch between form mode and JSON mode when editing complex variables, so that I can choose the most convenient way to input data.
+
+#### Acceptance Criteria
+
+1. FOR complex variable types (object, array[object], array[string], array[number], array[boolean]) with children, THE Input_UI SHALL display mode switcher buttons
+2. WHEN form mode is selected, THE Input_UI SHALL display structured form inputs for each field
+3. WHEN JSON mode is selected, THE Input_UI SHALL display a JSON code editor
+4. THE JSON_Editor SHALL validate JSON syntax and parse valid JSON into structured data
+5. THE mode switcher SHALL be available in workflow test run, configuration debug panel, and share pages
+6. THE mode preference SHALL be maintained per variable during the editing session
+
+### Requirement 10: LLM 节点输入变量支持
+
+**User Story:** As a workflow designer, I want to define input variables in LLM nodes similar to code execution nodes, so that I can pass structured data to LLM prompts.
+
+#### Acceptance Criteria
+
+1. THE LLM_Node_Panel SHALL display an "Input Variables" section
+2. THE Input_Variables_Section SHALL allow adding, editing, and removing input variables
+3. EACH input variable SHALL have a name and a variable selector to reference upstream node outputs
+4. THE LLM_Node_Execution SHALL resolve input variables and make them available in the prompt context
+5. THE Input_Variables SHALL support all variable types including nested structures
