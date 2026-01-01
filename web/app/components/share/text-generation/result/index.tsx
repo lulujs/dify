@@ -13,10 +13,10 @@ import { RiLoader2Line } from '@remixicon/react'
 import { sendCompletionMessage, sendWorkflowMessage, stopChatMessageResponding, stopWorkflowMessage, updateFeedback } from '@/service/share'
 import type { FeedbackType } from '@/app/components/base/chat/chat/type'
 import Loading from '@/app/components/base/loading'
-import type { PromptConfig } from '@/models/debug'
+import type { PromptConfig, PromptVariableChild } from '@/models/debug'
 import type { InstalledApp } from '@/models/explore'
 import { TransferMethod, type VisionFile, type VisionSettings } from '@/types/app'
-import { NodeRunningStatus, WorkflowRunningStatus } from '@/app/components/workflow/types'
+import { InputVarType, NodeRunningStatus, WorkflowRunningStatus } from '@/app/components/workflow/types'
 import type { WorkflowProcess } from '@/app/components/base/chat/types'
 import { sleep } from '@/utils'
 import type { SiteInfo } from '@/models/share'
@@ -27,6 +27,70 @@ import {
 } from '@/app/components/base/file-uploader/utils'
 import type { FileEntity } from '@/app/components/base/file-uploader/types'
 import { formatBooleanInputs } from '@/utils/model-config'
+
+/**
+ * Validates nested object values against their child definitions
+ * Returns the path of the first missing required field, or null if all valid
+ */
+function validateNestedRequired(
+  definition: PromptVariableChild[],
+  value: Record<string, unknown> | undefined | null,
+  parentPath: string,
+): string | null {
+  if (!definition || definition.length === 0)
+    return null
+
+  for (const child of definition) {
+    const fieldValue = value?.[child.variable]
+    const fieldPath = parentPath ? `${parentPath}.${child.variable}` : child.variable
+
+    // Check if required field is missing or empty
+    if (child.required) {
+      const isEmpty = fieldValue === undefined
+        || fieldValue === null
+        || fieldValue === ''
+        || (Array.isArray(fieldValue) && fieldValue.length === 0)
+
+      if (isEmpty)
+        return fieldPath
+    }
+
+    // Recursively validate nested children for object types
+    if (child.children && child.children.length > 0 && child.type === InputVarType.object) {
+      const nestedError = validateNestedRequired(
+        child.children,
+        fieldValue as Record<string, unknown> | undefined,
+        fieldPath,
+      )
+      if (nestedError)
+        return nestedError
+    }
+  }
+
+  return null
+}
+
+/**
+ * Validates array of objects against their child definitions
+ * Returns the path of the first missing required field, or null if all valid
+ */
+function validateArrayObjectRequired(
+  definition: PromptVariableChild[],
+  value: Array<Record<string, unknown>> | undefined | null,
+  variableName: string,
+): string | null {
+  if (!definition || definition.length === 0 || !Array.isArray(value))
+    return null
+
+  for (let i = 0; i < value.length; i++) {
+    const itemPath = `${variableName}[${i}]`
+    const error = validateNestedRequired(definition, value[i], itemPath)
+    if (error)
+      return error
+  }
+
+  return null
+}
 
 export type IResultProps = {
   isWorkflow: boolean
@@ -205,6 +269,36 @@ const Result: FC<IResultProps> = ({
     if (hasEmptyInput) {
       logError(t('appDebug.errorMessage.valueOfVarRequired', { key: hasEmptyInput }))
       return false
+    }
+
+    // Validate nested required fields for object and array[object] types
+    for (const variable of prompt_variables) {
+      if (variable.children && variable.children.length > 0) {
+        const value = inputs[variable.key]
+
+        if (variable.type === InputVarType.object) {
+          const nestedError = validateNestedRequired(
+            variable.children,
+            value as Record<string, unknown>,
+            variable.key,
+          )
+          if (nestedError) {
+            logError(t('appDebug.errorMessage.valueOfVarRequired', { key: nestedError }))
+            return false
+          }
+        }
+        else if (variable.type === InputVarType.arrayObject) {
+          const arrayError = validateArrayObjectRequired(
+            variable.children,
+            value as Array<Record<string, unknown>>,
+            variable.key,
+          )
+          if (arrayError) {
+            logError(t('appDebug.errorMessage.valueOfVarRequired', { key: arrayError }))
+            return false
+          }
+        }
+      }
     }
 
     if (completionFiles.find(item => item.transfer_method === TransferMethod.local_file && !item.upload_file_id)) {

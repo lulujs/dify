@@ -285,6 +285,58 @@
     - 为复杂变量类型添加模式切换按钮
     - _Requirements: 7.1_
 
+- [x] 28. 修复子变量保存时合法性校验缺失问题
+  - [x] 28.1 添加子变量递归验证函数
+    - 在 `web/app/components/workflow/nodes/_base/components/nested-variable-editor/utils.ts` 添加 `validateNestedVariables` 函数
+    - 验证子变量名称不能为空
+    - 验证同层级子变量名称不能重复
+    - 验证子变量名称格式合法（字母开头，只包含字母、数字和下划线）
+    - 递归验证所有层级的子变量
+    - _Requirements: 2.1, 2.5, 2.6_
+  - [x] 28.2 更新 Configuration 页面变量配置模态框
+    - 修改 `web/app/components/app/configuration/config-var/config-modal/index.tsx`
+    - 在 `handleConfirm` 中对 `object` 和 `arrayObject` 类型添加子变量验证
+    - _Requirements: 2.1, 2.5, 2.6_
+  - [x] 28.3 更新 Workflow Start 节点变量配置
+    - Start 节点使用同一个 `ConfigVarModal` 组件，验证逻辑自动生效
+    - _Requirements: 2.1, 2.5, 2.6_
+  - [x] 28.4 添加国际化错误消息
+    - 在 `web/i18n/en-US/workflow.ts` 和 `web/i18n/zh-Hans/workflow.ts` 添加相关错误消息
+    - _Requirements: 7.1_
+
+- [x] 29. 完善 Workflow Test Run 必填校验
+  - [x] 29.1 检查并完善 before-run-form 必填校验逻辑
+    - 检查 `web/app/components/workflow/nodes/_base/components/before-run-form/index.tsx`
+    - 确保 `validateNestedRequired` 函数正确处理所有嵌套层级
+    - 确保 `validateArrayObjectRequired` 函数正确验证数组中每个对象的必填字段
+    - 添加对 `array[string]`、`array[number]`、`array[boolean]` 类型的必填校验
+    - _Requirements: 11.1, 11.2, 11.3, 11.4, 11.5_
+  - [x] 29.2 确保校验逻辑在 handleRun 中正确触发
+    - 验证所有复杂类型变量都经过必填校验
+    - 确保错误消息使用正确的字段路径格式
+    - _Requirements: 11.4, 11.6_
+  - [x] 29.3 添加缺失的国际化错误消息
+    - 在 `web/i18n/en-US/workflow.ts` 和 `web/i18n/zh-Hans/workflow.ts` 添加相关错误消息
+    - _Requirements: 11.4_
+
+- [ ] 30. 统一所有入口点的必填校验逻辑
+  - [ ] 30.1 创建共享的必填校验工具函数
+    - 在 `web/utils/` 或适当位置创建 `nested-variable-validation.ts`
+    - 提取 `validateNestedRequired` 和 `validateArrayObjectRequired` 为可复用函数
+    - 支持所有复杂类型：`object`、`array[object]`、`array[string]`、`array[number]`、`array[boolean]`
+    - _Requirements: 11.1, 11.2, 11.3, 11.5_
+  - [ ] 30.2 更新各入口点使用共享校验函数
+    - 更新 `before-run-form/index.tsx` 使用共享函数
+    - 更新 `chat-user-input.tsx` 使用共享函数
+    - 更新 `prompt-value-panel/index.tsx` 使用共享函数
+    - 更新分享页面组件使用共享函数
+    - _Requirements: 11.5_
+
+- [ ] 31. Checkpoint - 必填校验功能验证
+  - 运行 `pnpm lint` 和 `pnpm run type-check` 确保代码质量
+  - 手动测试各入口点的必填校验功能
+  - 确保错误消息正确显示字段路径
+
 ## Notes
 
 - 任务标记 `*` 的为可选测试任务，可根据时间安排决定是否实现

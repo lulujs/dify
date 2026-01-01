@@ -93,9 +93,9 @@ const NestedVariableEditor: FC<NestedVariableEditorProps> = ({
     }
     handleUpdateVariable(index, updatedVariable)
 
-    // Auto-expand when adding a child
-    const path = parentPath ? `${parentPath}.${variable.name}` : variable.name
-    setExpandedPaths(prev => new Set(prev).add(path))
+    // Auto-expand when adding a child (use name-based path for expand state)
+    const namePath = parentPath ? `${parentPath}.${variable.name || index}` : (variable.name || String(index))
+    setExpandedPaths(prev => new Set(prev).add(namePath))
   }, [value, handleUpdateVariable, parentPath])
 
   // Handle children change for a variable
@@ -128,13 +128,16 @@ const NestedVariableEditor: FC<NestedVariableEditorProps> = ({
   return (
     <div className="space-y-1">
       {value.map((variable, index) => {
-        const path = parentPath ? `${parentPath}.${variable.name}` : variable.name
-        const isExpanded = expandedPaths.has(path)
+        // Use index-based path for key to avoid duplicate key issues when names are the same
+        const indexPath = parentPath ? `${parentPath}[${index}]` : `[${index}]`
+        // Use name-based path for expand state (so renaming doesn't collapse)
+        const namePath = parentPath ? `${parentPath}.${variable.name || index}` : (variable.name || String(index))
+        const isExpanded = expandedPaths.has(namePath)
         const canAddChildren = isNestableType(variable.type) && canAddMoreNesting
 
         return (
           <VariableRow
-            key={path}
+            key={indexPath}
             variable={variable}
             depth={currentDepth}
             canAddChildren={canAddChildren}
@@ -142,7 +145,7 @@ const NestedVariableEditor: FC<NestedVariableEditorProps> = ({
             onUpdate={updated => handleUpdateVariable(index, updated)}
             onDelete={() => handleDeleteVariable(index)}
             onAddChild={() => handleAddChild(index)}
-            onToggleExpand={() => toggleExpand(path)}
+            onToggleExpand={() => toggleExpand(namePath)}
             disabled={disabled}
             siblingNames={siblingNames}
           >
@@ -154,7 +157,7 @@ const NestedVariableEditor: FC<NestedVariableEditorProps> = ({
                 maxDepth={maxDepth}
                 disabled={disabled}
                 currentDepth={currentDepth + 1}
-                parentPath={path}
+                parentPath={namePath}
               />
             )}
           </VariableRow>

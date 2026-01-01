@@ -7,6 +7,7 @@ import Form from './form'
 import cn from '@/utils/classnames'
 import Button from '@/app/components/base/button'
 import Split from '@/app/components/workflow/nodes/_base/components/split'
+import type { InputVarChild } from '@/app/components/workflow/types'
 import { InputVarType } from '@/app/components/workflow/types'
 import Toast from '@/app/components/base/toast'
 import { TransferMethod } from '@/types/app'
@@ -16,6 +17,81 @@ import type { Emoji } from '@/app/components/tools/types'
 import type { SpecialResultPanelProps } from '@/app/components/workflow/run/special-result-panel'
 import PanelWrap from './panel-wrap'
 const i18nPrefix = 'workflow.singleRun'
+
+/**
+ * Validates nested object values against their child definitions
+ * Returns the path of the first missing required field, or null if all valid
+ */
+function validateNestedRequired(
+  definition: InputVarChild[],
+  value: Record<string, unknown> | undefined | null,
+  parentPath: string,
+): string | null {
+  if (!definition || definition.length === 0)
+    return null
+
+  for (const child of definition) {
+    const fieldValue = value?.[child.variable]
+    const fieldPath = parentPath ? `${parentPath}.${child.variable}` : child.variable
+
+    // Check if required field is missing or empty
+    if (child.required) {
+      const isEmpty = fieldValue === undefined
+        || fieldValue === null
+        || fieldValue === ''
+        || (Array.isArray(fieldValue) && fieldValue.length === 0)
+
+      if (isEmpty)
+        return fieldPath
+    }
+
+    // Recursively validate nested children for object types
+    if (child.children && child.children.length > 0 && child.type === InputVarType.object) {
+      const nestedError = validateNestedRequired(
+        child.children,
+        fieldValue as Record<string, unknown> | undefined,
+        fieldPath,
+      )
+      if (nestedError)
+        return nestedError
+    }
+
+    // Recursively validate nested children for array[object] types
+    if (child.children && child.children.length > 0 && child.type === InputVarType.arrayObject) {
+      const arrayError = validateArrayObjectRequired(
+        child.children,
+        fieldValue as Array<Record<string, unknown>> | undefined,
+        fieldPath,
+      )
+      if (arrayError)
+        return arrayError
+    }
+  }
+
+  return null
+}
+
+/**
+ * Validates array of objects against their child definitions
+ * Returns the path of the first missing required field, or null if all valid
+ */
+function validateArrayObjectRequired(
+  definition: InputVarChild[],
+  value: Array<Record<string, unknown>> | undefined | null,
+  variableName: string,
+): string | null {
+  if (!definition || definition.length === 0 || !Array.isArray(value))
+    return null
+
+  for (let i = 0; i < value.length; i++) {
+    const itemPath = `${variableName}[${i}]`
+    const error = validateNestedRequired(definition, value[i], itemPath)
+    if (error)
+      return error
+  }
+
+  return null
+}
 
 export type BeforeRunFormProps = {
   nodeName: string
@@ -101,6 +177,41 @@ const BeforeRunForm: FC<BeforeRunFormProps> = ({
 
           if (fileIsUploading)
             errMsg = t('appDebug.errorMessage.waitForFileUpload')
+        }
+
+        // Validate nested required fields for object type
+        if (!errMsg && input.type === InputVarType.object && input.children && input.children.length > 0) {
+          const nestedError = validateNestedRequired(
+            input.children,
+            value as Record<string, unknown>,
+            input.variable,
+          )
+          if (nestedError)
+            errMsg = t('workflow.errorMsg.fieldRequired', { field: nestedError })
+        }
+
+        // Validate nested required fields for array[object] type
+        if (!errMsg && input.type === InputVarType.arrayObject && input.children && input.children.length > 0) {
+          const arrayError = validateArrayObjectRequired(
+            input.children,
+            value as Array<Record<string, unknown>>,
+            input.variable,
+          )
+          if (arrayError)
+            errMsg = t('workflow.errorMsg.fieldRequired', { field: arrayError })
+        }
+
+        // Validate required array primitive types (array[string], array[number], array[boolean])
+        if (!errMsg && input.required && !(input.variable in existVarValuesInForm)) {
+          const isArrayPrimitiveType = input.type === InputVarType.arrayString
+            || input.type === InputVarType.arrayNumber
+            || input.type === InputVarType.arrayBoolean
+
+          if (isArrayPrimitiveType) {
+            const isEmpty = !Array.isArray(value) || value.length === 0
+            if (isEmpty)
+              errMsg = t('workflow.errorMsg.fieldRequired', { field: typeof input.label === 'object' ? input.label.variable : input.label })
+          }
         }
       })
     })

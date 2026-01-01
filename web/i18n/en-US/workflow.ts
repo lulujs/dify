@@ -1324,6 +1324,11 @@ const translation = {
     maxDepthReached: 'Maximum nesting depth reached',
     duplicateName: 'Variable name already exists',
     invalidName: 'Name must start with a letter and contain only alphanumeric characters and underscores',
+    validation: {
+      emptyName: 'Child variable name cannot be empty at path: {{path}}',
+      invalidFormat: 'Invalid variable name "{{field}}" at path: {{path}}. Name must start with a letter and contain only alphanumeric characters and underscores',
+      duplicateName: 'Duplicate variable name "{{field}}" at path: {{path}}',
+    },
     types: {
       string: 'String',
       integer: 'Integer',

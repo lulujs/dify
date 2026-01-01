@@ -143,3 +143,19 @@
 3. EACH input variable SHALL have a name and a variable selector to reference upstream node outputs
 4. THE LLM_Node_Execution SHALL resolve input variables and make them available in the prompt context
 5. THE Input_Variables SHALL support all variable types including nested structures
+
+### Requirement 11: 复杂变量必填校验
+
+**User Story:** As a workflow user, I want the system to validate required fields for complex variable types before running, so that I can catch missing data early and avoid runtime errors.
+
+#### Acceptance Criteria
+
+1. WHEN running a workflow with object type variables, THE Validation_Engine SHALL recursively check all required child fields
+2. WHEN running a workflow with array[object] type variables, THE Validation_Engine SHALL validate required fields for each array element
+3. WHEN running a workflow with array[string], array[number], or array[boolean] type variables, THE Validation_Engine SHALL validate that required arrays are not empty
+4. IF a required nested field is missing or empty, THE Validation_Engine SHALL display an error message with the specific field path
+5. THE required field validation SHALL be applied consistently across all entry points:
+   - Workflow Test Run (before-run-form)
+   - Configuration Debug Panel (chat-user-input, prompt-value-panel)
+   - Share Pages (text-generation, chat-with-history, embedded-chatbot)
+6. THE validation error message SHALL clearly indicate which field is missing using dot-notation path (e.g., "user.profile.name" or "items[0].title")

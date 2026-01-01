@@ -274,6 +274,52 @@ export const useChatWithHistory = (installedAppInfo?: InstalledApp) => {
         }
       }
 
+      // Handle object type
+      if (item.object) {
+        return {
+          ...item.object,
+          type: InputVarType.object,
+        }
+      }
+
+      // Handle array[string] type
+      if (item['array[string]']) {
+        return {
+          ...item['array[string]'],
+          type: InputVarType.arrayString,
+        }
+      }
+
+      // Handle array[number] type
+      if (item['array[number]']) {
+        return {
+          ...item['array[number]'],
+          type: InputVarType.arrayNumber,
+        }
+      }
+
+      // Handle array[boolean] type
+      if (item['array[boolean]']) {
+        return {
+          ...item['array[boolean]'],
+          type: InputVarType.arrayBoolean,
+        }
+      }
+
+      // Handle array[object] type
+      if (item['array[object]']) {
+        return {
+          ...item['array[object]'],
+          type: InputVarType.arrayObject,
+        }
+      }
+
+      // Default to text-input
+      if (!item['text-input']) {
+        // Skip unknown types
+        return null
+      }
+
       let value = initInputs[item['text-input'].variable]
       if (value && item['text-input'].max_length && value.length > item['text-input'].max_length)
         value = value.slice(0, item['text-input'].max_length)
@@ -283,7 +329,7 @@ export const useChatWithHistory = (installedAppInfo?: InstalledApp) => {
         default: value || item.default || item['text-input'].default,
         type: 'text-input',
       }
-    })
+    }).filter(Boolean)
   }, [initInputs, appParams])
 
   const allInputsHidden = useMemo(() => {

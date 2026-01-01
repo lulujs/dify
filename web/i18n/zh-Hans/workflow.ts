@@ -1324,6 +1324,11 @@ const translation = {
     maxDepthReached: '已达到最大嵌套深度',
     duplicateName: '变量名称已存在',
     invalidName: '名称必须以字母开头，且只能包含字母、数字和下划线',
+    validation: {
+      emptyName: '子变量名称不能为空，路径：{{path}}',
+      invalidFormat: '无效的变量名称 "{{field}}"，路径：{{path}}。名称必须以字母开头，且只能包含字母、数字和下划线',
+      duplicateName: '重复的变量名称 "{{field}}"，路径：{{path}}',
+    },
     types: {
       string: '字符串',
       integer: '整数',

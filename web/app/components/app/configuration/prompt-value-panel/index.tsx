@@ -330,7 +330,7 @@ const PromptValuePanel: FC<IPromptValuePanelProps> = ({
                       {/* JSON Object type without children - JSON editor */}
                       {type === InputVarType.object && (!children || children.length === 0) && (
                         <CodeEditor
-                          value={typeof inputs[key] === 'string' ? inputs[key] : (typeof inputs[key] === 'object' ? inputs[key] : '')}
+                          value={getJsonValue(inputs[key])}
                           language={CodeLanguage.json}
                           onChange={(value) => { handleInputValueChange(key, value) }}
                           noWrapper
@@ -509,7 +509,7 @@ const PromptValuePanel: FC<IPromptValuePanelProps> = ({
                       {/* Array[Object] type without children - JSON array editor */}
                       {type === InputVarType.arrayObject && (!children || children.length === 0) && (
                         <CodeEditor
-                          value={typeof inputs[key] === 'string' ? inputs[key] : (typeof inputs[key] === 'object' ? inputs[key] : '')}
+                          value={getJsonValue(inputs[key])}
                           language={CodeLanguage.json}
                           onChange={(value) => { handleInputValueChange(key, value) }}
                           noWrapper

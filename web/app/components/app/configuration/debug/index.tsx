@@ -38,7 +38,7 @@ import type { ModelConfig as BackendModelConfig, VisionFile, VisionSettings } fr
 import { formatBooleanInputs, promptVariablesToUserInputsForm } from '@/utils/model-config'
 import TextGeneration from '@/app/components/app/text-generate/item'
 import { DEFAULT_CHAT_PROMPT_CONFIG, DEFAULT_COMPLETION_PROMPT_CONFIG, IS_CE_EDITION } from '@/config'
-import type { Inputs } from '@/models/debug'
+import type { Inputs, PromptVariableChild } from '@/models/debug'
 import { useDefaultModel } from '@/app/components/header/account-setting/model-provider-page/hooks'
 import { ModelFeatureEnum, ModelTypeEnum } from '@/app/components/header/account-setting/model-provider-page/declarations'
 import type { ModelParameterModalProps } from '@/app/components/header/account-setting/model-provider-page/model-parameter-modal'
@@ -48,6 +48,71 @@ import AgentLogModal from '@/app/components/base/agent-log-modal'
 import PromptLogModal from '@/app/components/base/prompt-log-modal'
 import { useStore as useAppStore } from '@/app/components/app/store'
 import { useFeatures, useFeaturesStore } from '@/app/components/base/features/hooks'
+import { InputVarType } from '@/app/components/workflow/types'
+
+/**
+ * Validates nested object values against their child definitions
+ * Returns the path of the first missing required field, or null if all valid
+ */
+function validateNestedRequired(
+  definition: PromptVariableChild[],
+  value: Record<string, unknown> | undefined | null,
+  parentPath: string,
+): string | null {
+  if (!definition || definition.length === 0)
+    return null
+
+  for (const child of definition) {
+    const fieldValue = value?.[child.variable]
+    const fieldPath = parentPath ? `${parentPath}.${child.variable}` : child.variable
+
+    // Check if required field is missing or empty
+    if (child.required) {
+      const isEmpty = fieldValue === undefined
+        || fieldValue === null
+        || fieldValue === ''
+        || (Array.isArray(fieldValue) && fieldValue.length === 0)
+
+      if (isEmpty)
+        return fieldPath
+    }
+
+    // Recursively validate nested children for object types
+    if (child.children && child.children.length > 0 && child.type === InputVarType.object) {
+      const nestedError = validateNestedRequired(
+        child.children,
+        fieldValue as Record<string, unknown> | undefined,
+        fieldPath,
+      )
+      if (nestedError)
+        return nestedError
+    }
+  }
+
+  return null
+}
+
+/**
+ * Validates array of objects against their child definitions
+ * Returns the path of the first missing required field, or null if all valid
+ */
+function validateArrayObjectRequired(
+  definition: PromptVariableChild[],
+  value: Array<Record<string, unknown>> | undefined | null,
+  variableName: string,
+): string | null {
+  if (!definition || definition.length === 0 || !Array.isArray(value))
+    return null
+
+  for (let i = 0; i < value.length; i++) {
+    const itemPath = `${variableName}[${i}]`
+    const error = validateNestedRequired(definition, value[i], itemPath)
+    if (error)
+      return error
+  }
+
+  return null
+}
 import { noop } from 'lodash-es'
 
 type IDebug = {
@@ -174,6 +239,36 @@ const Debug: FC<IDebug> = ({
     if (hasEmptyInput) {
       logError(t('appDebug.errorMessage.valueOfVarRequired', { key: hasEmptyInput }))
       return false
+    }
+
+    // Validate nested required fields for object and array[object] types
+    for (const variable of modelConfig.configs.prompt_variables) {
+      if (variable.children && variable.children.length > 0) {
+        const value = inputs[variable.key]
+
+        if (variable.type === InputVarType.object) {
+          const nestedError = validateNestedRequired(
+            variable.children,
+            value as Record<string, unknown>,
+            variable.key,
+          )
+          if (nestedError) {
+            logError(t('appDebug.errorMessage.valueOfVarRequired', { key: nestedError }))
+            return false
+          }
+        }
+        else if (variable.type === InputVarType.arrayObject) {
+          const arrayError = validateArrayObjectRequired(
+            variable.children,
+            value as Array<Record<string, unknown>>,
+            variable.key,
+          )
+          if (arrayError) {
+            logError(t('appDebug.errorMessage.valueOfVarRequired', { key: arrayError }))
+            return false
+          }
+        }
+      }
     }
 
     if (completionFiles.find(item => item.transfer_method === TransferMethod.local_file && !item.upload_file_id)) {

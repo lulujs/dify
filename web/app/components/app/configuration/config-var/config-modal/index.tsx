@@ -30,6 +30,7 @@ import type { FileEntity } from '@/app/components/base/file-uploader/types'
 import NestedVariableEditor from '@/app/components/workflow/nodes/_base/components/nested-variable-editor'
 import JsonEditModal from '@/app/components/workflow/nodes/_base/components/nested-variable-editor/json-import-modal'
 import { inputVarChildrenToNestedDefinitions, nestedDefinitionsToInputVarChildren } from '@/app/components/workflow/nodes/start/utils'
+import { formatValidationErrors, validateNestedVariables } from '@/app/components/workflow/nodes/_base/components/nested-variable-editor/utils'
 
 const TEXT_MAX_LENGTH = 256
 const CHECKBOX_DEFAULT_TRUE_VALUE = 'true'
@@ -261,6 +262,19 @@ const ConfigModal: FC<IConfigModalProps> = ({
         const errorMessages = t('workflow.errorMsg.fieldRequired', { field: t('appDebug.variableConfig.file.custom.name') })
         Toast.notify({ type: 'error', message: errorMessages })
         return
+      }
+      onConfirm(tempPayload, moreInfo)
+    }
+    else if ([InputVarType.object, InputVarType.arrayObject].includes(type)) {
+      // Validate nested children for object and arrayObject types
+      if (tempPayload.children && tempPayload.children.length > 0) {
+        const nestedDefinitions = inputVarChildrenToNestedDefinitions(tempPayload.children)
+        const validationErrors = validateNestedVariables(nestedDefinitions)
+        if (validationErrors.length > 0) {
+          const errorMessage = formatValidationErrors(validationErrors, t)
+          Toast.notify({ type: 'error', message: errorMessage })
+          return
+        }
       }
       onConfirm(tempPayload, moreInfo)
     }
