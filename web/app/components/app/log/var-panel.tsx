@@ -12,8 +12,17 @@ import ImagePreview from '@/app/components/base/image-uploader/image-preview'
 import cn from '@/utils/classnames'
 
 type Props = {
-  varList: { label: string; value: string }[]
+  varList: { label: string; value: string | number | boolean | object | null | undefined }[]
   message_files: string[]
+}
+
+// Helper function to format variable value for display
+const formatVarValue = (value: string | number | boolean | object | null | undefined): string => {
+  if (value === null || value === undefined)
+    return ''
+  if (typeof value === 'object')
+    return JSON.stringify(value, null, 2)
+  return String(value)
 }
 
 const VarPanel: FC<Props> = ({
@@ -47,7 +56,7 @@ const VarPanel: FC<Props> = ({
                 <span className='truncate'>{label}</span>
                 <span className='shrink-0 opacity-60'>{'}}'}</span>
               </div>
-              <div className='whitespace-pre-wrap pl-2.5 text-text-secondary'>{value}</div>
+              <div className='whitespace-pre-wrap pl-2.5 text-text-secondary'>{formatVarValue(value)}</div>
             </div>
           ))}
 
