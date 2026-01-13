@@ -403,6 +403,7 @@ const translation = {
     minimize: 'Exit Full Screen',
     scrollToSelectedNode: 'Scroll to selected node',
     optional_and_hidden: '(optional & hidden)',
+    form: 'Form',
   },
   nodes: {
     common: {

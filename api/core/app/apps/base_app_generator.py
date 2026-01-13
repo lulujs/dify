@@ -234,7 +234,7 @@ class BaseAppGenerator:
     @final
     @staticmethod
     def _get_draft_var_saver_factory(invoke_from: InvokeFrom, account: Account | EndUser) -> DraftVariableSaverFactory:
-        if invoke_from == InvokeFrom.DEBUGGER:
+        if invoke_from == InvokeFrom.DEBUGGER: 
             assert isinstance(account, Account)
 
             def draft_var_saver_factory(

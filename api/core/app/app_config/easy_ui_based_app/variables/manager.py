@@ -22,6 +22,32 @@ _ALLOWED_VARIABLE_ENTITY_TYPE = frozenset(
 
 class BasicVariablesConfigManager:
     @classmethod
+    def _convert_child_variable(cls, child_data: dict) -> VariableEntity:
+        """
+        Convert child variable data to VariableEntity.
+
+        :param child_data: child variable data
+        :return: VariableEntity
+        """
+        child_entity = VariableEntity(
+            type=VariableEntityType(child_data.get("type")),
+            variable=child_data.get("variable", ""),
+            label=child_data.get("label", ""),
+            description=child_data.get("description", ""),
+            required=child_data.get("required", False),
+            max_length=child_data.get("max_length"),
+            options=child_data.get("options", []),
+        )
+
+        # Handle nested children recursively
+        if child_entity.type.is_nestable():
+            children_data = child_data.get("children", [])
+            if children_data:
+                child_entity.children = [cls._convert_child_variable(child) for child in children_data]
+
+        return child_entity
+
+    @classmethod
     def convert(cls, config: dict) -> tuple[list[VariableEntity], list[ExternalDataVariableEntity]]:
         """
         Convert model config to model config
@@ -71,17 +97,23 @@ class BasicVariablesConfigManager:
                 VariableEntityType.ARRAY_OBJECT,
             }:
                 variable = variables[variable_type]
-                variable_entities.append(
-                    VariableEntity(
-                        type=variable_type,
-                        variable=variable.get("variable"),
-                        description=variable.get("description") or "",
-                        label=variable.get("label"),
-                        required=variable.get("required", False),
-                        max_length=variable.get("max_length"),
-                        options=variable.get("options") or [],
-                    )
+                variable_entity = VariableEntity(
+                    type=variable_type,
+                    variable=variable.get("variable"),
+                    description=variable.get("description") or "",
+                    label=variable.get("label"),
+                    required=variable.get("required", False),
+                    max_length=variable.get("max_length"),
+                    options=variable.get("options") or [],
                 )
+
+                # Handle children for nestable types
+                if variable_type in {VariableEntityType.OBJECT, VariableEntityType.ARRAY_OBJECT}:
+                    children_data = variable.get("children", [])
+                    if children_data:
+                        variable_entity.children = [cls._convert_child_variable(child) for child in children_data]
+
+                variable_entities.append(variable_entity)
 
         return variable_entities, external_data_variables
 

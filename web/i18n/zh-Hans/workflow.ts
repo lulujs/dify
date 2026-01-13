@@ -403,6 +403,7 @@ const translation = {
     minimize: '退出最大化',
     scrollToSelectedNode: '滚动至选中节点',
     optional_and_hidden: '（选填 & 隐藏）',
+    form: '表单',
   },
   nodes: {
     common: {

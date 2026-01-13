@@ -332,10 +332,29 @@
     - 更新分享页面组件使用共享函数
     - _Requirements: 11.5_
 
-- [ ] 31. Checkpoint - 必填校验功能验证
-  - 运行 `pnpm lint` 和 `pnpm run type-check` 确保代码质量
-  - 手动测试各入口点的必填校验功能
-  - 确保错误消息正确显示字段路径
+- [x] 32. 修复复杂变量子变量数组类型定义丢失问题
+  - [x] 32.1 修复后端变量管理器中的 children 字段处理
+    - 修改 `api/core/app/app_config/easy_ui_based_app/variables/manager.py`
+    - 在 `BasicVariablesConfigManager.convert()` 方法中添加对 `children` 字段的处理
+    - 添加 `_convert_child_variable()` 递归方法处理嵌套子变量
+    - 确保 `object` 和 `array[object]` 类型的变量正确保存和加载子变量定义
+    - _Requirements: 5.1, 5.2, 5.3_
+  - [x] 32.2 修复前端变量序列化中的类型处理
+    - 修改 `web/utils/model-config.ts`
+    - 在 `promptVariablesToUserInputsForm()` 函数中正确处理复杂类型变量
+    - 确保复杂类型变量不被错误归类到 `external_data_tool` 分支
+    - 修复重复条件判断的 lint 错误
+    - _Requirements: 5.1, 5.2_
+  - [x] 32.3 测试验证修复效果
+    - 在 Configuration 页面创建 `object` 类型变量，添加 `array[string]` 子变量
+    - 保存后重新打开，验证子变量类型保持为 `array[string]` 而不是 `string`
+    - 在 Workflow Start 节点中进行相同测试
+    - _Requirements: 5.1, 5.2, 5.5_
+
+- [ ] 33. Checkpoint - 复杂变量类型保存修复验证
+  - 运行 `make lint` 和 `make type-check` 确保后端代码质量
+  - 运行 `pnpm lint` 和 `pnpm run type-check` 确保前端代码质量
+  - 手动测试复杂变量的保存和加载功能
 
 ## Notes
 
