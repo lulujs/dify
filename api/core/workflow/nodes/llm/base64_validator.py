@@ -15,7 +15,7 @@ class Base64Validator:
     DATA_URI_PATTERN: re.Pattern[str] = re.compile(r"^data:image/(jpeg|png|gif|webp|bmp);base64,(.+)", re.IGNORECASE)
 
     @classmethod
-    def validate_and_extract(cls, base64_string: str) -> tuple[bytes, str]:
+    def validate_and_extract(cls, base64_string: str) -> tuple[bytes, str] | None:
         """
         验证 base64 字符串并提取图片数据
 
@@ -23,13 +23,14 @@ class Base64Validator:
             base64_string: Base64 编码的图片字符串（可能包含 data URI scheme）
 
         Returns:
-            tuple[bytes, str]: (图片二进制数据, MIME 类型)
+            tuple[bytes, str] | None: (图片二进制数据, MIME 类型) 或 None（当字符串为空时）
 
         Raises:
             Base64ValidationError: 验证失败时抛出
         """
-        if not base64_string:
-            raise Base64ValidationError("Base64 string cannot be empty")
+        # 允许空字符串，返回 None
+        if not base64_string or not base64_string.strip():
+            return None
 
         # 去除首尾空白字符
         base64_string = base64_string.strip()

@@ -744,7 +744,8 @@ class LLMNode(Node[LLMNodeData]):
         if isinstance(variable, StringSegment):
             try:
                 file = converter.convert(variable.value)
-                files.append(file)
+                if file is not None:  # 只添加非空文件
+                    files.append(file)
             except Exception:
                 logger.exception("Failed to convert base64 string")
                 raise
@@ -755,7 +756,8 @@ class LLMNode(Node[LLMNodeData]):
                 if isinstance(item, str):
                     try:
                         file = converter.convert(item)
-                        files.append(file)
+                        if file is not None:  # 只添加非空文件
+                            files.append(file)
                     except Exception:
                         logger.exception("Failed to convert base64 string in array")
                         raise

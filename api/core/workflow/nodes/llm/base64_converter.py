@@ -19,7 +19,7 @@ class Base64ToFileConverter:
         self.file_saver = file_saver
         self.validator = Base64Validator()
 
-    def convert(self, base64_string: str) -> File:
+    def convert(self, base64_string: str) -> File | None:
         """
         将 base64 字符串转换为 File 对象
 
@@ -27,14 +27,21 @@ class Base64ToFileConverter:
             base64_string: Base64 编码的图片字符串
 
         Returns:
-            File: 转换后的 File 对象
+            File | None: 转换后的 File 对象，如果字符串为空则返回 None
 
         Raises:
             Base64ConversionError: 转换失败时抛出
         """
         try:
             # 验证并提取图片数据
-            image_data, mime_type = self.validator.validate_and_extract(base64_string)
+            result = self.validator.validate_and_extract(base64_string)
+
+            # 如果字符串为空，返回 None
+            if result is None:
+                logger.debug("Empty base64 string, skipping conversion")
+                return None
+
+            image_data, mime_type = result
 
             # 记录日志
             logger.info("Converting base64 string to file: mime_type=%s, size=%d bytes", mime_type, len(image_data))
