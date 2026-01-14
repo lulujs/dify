@@ -1,4 +1,5 @@
 from collections.abc import Mapping, Sequence
+from enum import StrEnum
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator
@@ -21,9 +22,24 @@ class ContextConfig(BaseModel):
     variable_selector: list[str] | None = None
 
 
+class VisionInputMode(StrEnum):
+    """视觉输入模式枚举"""
+
+    FILE_VARIABLE = "file_variable"  # 文件变量模式（默认）
+    BASE64_STRING = "base64_string"  # Base64 字符串模式
+
+
 class VisionConfigOptions(BaseModel):
     variable_selector: Sequence[str] = Field(default_factory=lambda: ["sys", "files"])
     detail: ImagePromptMessageContent.DETAIL = ImagePromptMessageContent.DETAIL.HIGH
+    input_mode: VisionInputMode = Field(
+        default=VisionInputMode.FILE_VARIABLE,
+        description="视觉输入模式：file_variable 或 base64_string",
+    )
+    base64_variable_selector: Sequence[str] | None = Field(
+        default=None,
+        description="Base64 字符串变量选择器，仅在 input_mode 为 base64_string 时使用",
+    )
 
 
 class VisionConfig(BaseModel):

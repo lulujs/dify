@@ -79,6 +79,7 @@ from .entities import (
     LLMNodeCompletionModelPromptTemplate,
     LLMNodeData,
     ModelConfig,
+    VisionInputMode,
 )
 from .exc import (
     InvalidContextStructureError,
@@ -164,14 +165,23 @@ class LLMNode(Node[LLMNodeData]):
             inputs.update(jinja_inputs)
 
             # fetch files
-            files = (
-                llm_utils.fetch_files(
-                    variable_pool=variable_pool,
-                    selector=self.node_data.vision.configs.variable_selector,
-                )
-                if self.node_data.vision.enabled
-                else []
-            )
+            files = []
+            if self.node_data.vision.enabled:
+                vision_config = self.node_data.vision.configs
+
+                if vision_config.input_mode == VisionInputMode.FILE_VARIABLE:
+                    # 文件变量模式（原有逻辑）
+                    files = llm_utils.fetch_files(
+                        variable_pool=variable_pool,
+                        selector=vision_config.variable_selector,
+                    )
+                elif vision_config.input_mode == VisionInputMode.BASE64_STRING:
+                    # Base64 字符串模式（新增逻辑）
+                    if vision_config.base64_variable_selector:
+                        files = self._fetch_base64_files(
+                            variable_pool=variable_pool,
+                            selector=vision_config.base64_variable_selector,
+                        )
 
             if files:
                 node_inputs["#files#"] = [file.to_dict() for file in files]
@@ -706,6 +716,52 @@ class LLMNode(Node[LLMNodeData]):
 
         return None
 
+    def _fetch_base64_files(
+        self,
+        variable_pool: VariablePool,
+        selector: Sequence[str],
+    ) -> list["File"]:
+        """
+        从变量池获取 base64 字符串并转换为 File 对象
+
+        Args:
+            variable_pool: 变量池
+            selector: 变量选择器
+
+        Returns:
+            list[File]: 转换后的 File 对象列表
+        """
+        from .base64_converter import Base64ToFileConverter
+
+        variable = variable_pool.get(selector)
+        if variable is None:
+            return []
+
+        converter = Base64ToFileConverter(file_saver=self._llm_file_saver)
+        files = []
+
+        # 处理单个字符串
+        if isinstance(variable, StringSegment):
+            try:
+                file = converter.convert(variable.value)
+                files.append(file)
+            except Exception:
+                logger.exception("Failed to convert base64 string")
+                raise
+
+        # 处理字符串数组
+        elif isinstance(variable, ArraySegment):
+            for item in variable.value:
+                if isinstance(item, str):
+                    try:
+                        file = converter.convert(item)
+                        files.append(file)
+                    except Exception:
+                        logger.exception("Failed to convert base64 string in array")
+                        raise
+
+        return files
+
     @staticmethod
     def _fetch_model_config(
         *,
@@ -958,7 +1014,12 @@ class LLMNode(Node[LLMNodeData]):
             variable_mapping["#context#"] = typed_node_data.context.variable_selector
 
         if typed_node_data.vision.enabled:
-            variable_mapping["#files#"] = typed_node_data.vision.configs.variable_selector
+            vision_config = typed_node_data.vision.configs
+            if vision_config.input_mode == VisionInputMode.FILE_VARIABLE:
+                variable_mapping["#files#"] = vision_config.variable_selector
+            elif vision_config.input_mode == VisionInputMode.BASE64_STRING:
+                if vision_config.base64_variable_selector:
+                    variable_mapping["#base64_images#"] = vision_config.base64_variable_selector
 
         if typed_node_data.memory:
             variable_mapping["#sys.query#"] = ["sys", SystemVariableKey.QUERY]

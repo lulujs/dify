@@ -100,8 +100,13 @@ const nodeDefault: NodeDefault<LLMNodeType> = {
         })
       }
     }
-    if (!errorMessages && payload.vision?.enabled && !payload.vision.configs?.variable_selector?.length)
-      errorMessages = t(`${i18nPrefix}.fieldRequired`, { field: t(`${i18nPrefix}.fields.visionVariable`) })
+    if (!errorMessages && payload.vision?.enabled && payload.vision.configs) {
+      const inputMode = payload.vision.configs.input_mode || 'file_variable'
+      if (inputMode === 'file_variable' && !payload.vision.configs.variable_selector?.length)
+        errorMessages = t(`${i18nPrefix}.fieldRequired`, { field: t(`${i18nPrefix}.fields.visionVariable`) })
+      if (inputMode === 'base64_string' && !payload.vision.configs.base64_variable_selector?.length)
+        errorMessages = t(`${i18nPrefix}.fieldRequired`, { field: t('workflow.nodes.llm.base64Variable') })
+    }
     return {
       isValid: !errorMessages,
       errorMessage: errorMessages,

@@ -512,6 +512,13 @@ const translation = {
         assistant: '基于用户消息的模型回复',
       },
       vision: '视觉',
+      visionInputMode: {
+        label: '输入模式',
+        fileVariable: '文件变量',
+        base64String: 'Base64 字符串',
+      },
+      base64Variable: 'Base64 变量',
+      base64VariableTooltip: '请选择包含 base64 图片字符串的变量',
       files: '文件',
       resolution: {
         name: '分辨率',

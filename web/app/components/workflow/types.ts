@@ -500,9 +500,16 @@ export type UploadFileSetting = {
   number_limits?: number
 }
 
+export enum VisionInputMode {
+  FileVariable = 'file_variable',
+  Base64String = 'base64_string',
+}
+
 export type VisionSetting = {
   variable_selector: ValueSelector
   detail: Resolution
+  input_mode?: VisionInputMode
+  base64_variable_selector?: ValueSelector
 }
 
 export enum WorkflowVersionFilterOptions {

@@ -2,6 +2,7 @@ import { produce } from 'immer'
 import { useCallback } from 'react'
 import { useIsChatMode } from './use-workflow'
 import type { ModelConfig, VisionSetting } from '@/app/components/workflow/types'
+import { VisionInputMode } from '@/app/components/workflow/types'
 import { useTextGenerationCurrentProviderAndModelAndModelList } from '@/app/components/header/account-setting/model-provider-page/hooks'
 import {
   ModelFeatureEnum,
@@ -47,6 +48,7 @@ const useConfigVision = (model: ModelConfig, {
         draft.configs = {
           detail: Resolution.high,
           variable_selector: ['sys', 'files'],
+          input_mode: VisionInputMode.FileVariable, // Default to file variable mode
         }
       }
     })
@@ -55,7 +57,11 @@ const useConfigVision = (model: ModelConfig, {
 
   const handleVisionResolutionChange = useCallback((config: VisionSetting) => {
     const newPayload = produce(payload, (draft) => {
-      draft.configs = config
+      // Ensure backward compatibility: set default input_mode if not present
+      draft.configs = {
+        ...config,
+        input_mode: config.input_mode || VisionInputMode.FileVariable,
+      }
     })
     onChange(newPayload)
   }, [onChange, payload])
@@ -72,6 +78,7 @@ const useConfigVision = (model: ModelConfig, {
         configs: {
           detail: Resolution.high,
           variable_selector: [],
+          input_mode: VisionInputMode.FileVariable, // Default to file variable mode
         },
       })
     }

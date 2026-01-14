@@ -512,6 +512,13 @@ const translation = {
       },
       addMessage: 'Add Message',
       vision: 'vision',
+      visionInputMode: {
+        label: 'Input Mode',
+        fileVariable: 'File Variable',
+        base64String: 'Base64 String',
+      },
+      base64Variable: 'Base64 Variable',
+      base64VariableTooltip: 'Select a variable containing base64 encoded image string',
       files: 'Files',
       resolution: {
         name: 'Resolution',

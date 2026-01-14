@@ -43,3 +43,11 @@ class FileTypeNotSupportError(LLMNodeError):
 class UnsupportedPromptContentTypeError(LLMNodeError):
     def __init__(self, *, type_name: str):
         super().__init__(f"Prompt content type {type_name} is not supported.")
+
+
+class Base64ValidationError(LLMNodeError):
+    """Raised when base64 validation fails."""
+
+
+class Base64ConversionError(LLMNodeError):
+    """Raised when base64 to file conversion fails."""
